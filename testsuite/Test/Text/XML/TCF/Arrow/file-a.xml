@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="../coding-tutorial.css" type="text/css"?>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head>
+  <meta http-equiv="Content-Language" content="en"/>
+  <title>Test</title>
+</head>
+<body>
+
+<h1>Test</h1>
+
+<div><a href="file-a.xml">This file</a> is for testing.</div>
+
+<p>This is first paragraph.</p>
+
+<pre>main = putStrLn "hello world"
+</pre>
+
+<p>To run it, enter this at a shell prompt:</p>
+
+<code>$ runghc hello1.hs</code>
+
+<p>This is third paragraph.</p>
+
+<pre>Prelude&gt; :load hello1.hs
+*Main&gt; main
+</pre>
+
+<p>This is the fourth paragraph.</p>
+
+<pre><![CDATA[main = interact (const "hello world\n")
+]]></pre>
+
+</body>
+</html>
