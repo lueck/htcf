@@ -1,4 +1,8 @@
-module Text.XML.TCF.Arrow.ArrowXml where
+module Text.XML.TCF.Arrow.ArrowXml
+  ( nameIn
+  , stripName
+  , stripNames
+  ) where
 
 import Text.XML.HXT.Core
 
