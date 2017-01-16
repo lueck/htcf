@@ -1,0 +1,7 @@
+<config>
+  <strippedText>
+    <simpleElement
+	namespace="http://www.tei-c.org/ns/1.0"
+	name="fw"/>
+  </strippedText>
+</config>
