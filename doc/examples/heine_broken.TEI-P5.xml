@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xmlns="http://www.tei-c.org/ns/1.0">
+    <teiHeader>
+        <fileDesc>
+            <titleStmt>
+                <title>Auf dem Brocken</title>
+                <author>Heinrich Heine (1797–1856)</author>
+                <respStmt>
+                    <name>Wiki Autor</name>
+                    <resp>Umwandlung in TEI-konformes XML</resp>
+                </respStmt>
+            </titleStmt>
+            <publicationStmt>
+                <p>aus Wikisource, der freien Quellensammlung
+                (<ptr
+		target="http://de.wikisource.org/wiki/Auf_dem_Brocken"/>)</p>
+		<p>entnommen aus Wikipedia, der freien Enzyklopädie
+		(<ptr
+		target="https://de.wikipedia.org/wiki/Text_Encoding_Initiative"/>)</p>
+            </publicationStmt>
+            <sourceDesc>
+                <biblFull>
+                    <titleStmt>
+                        <title level="a">Auf dem Brocken</title>
+                        <title level="m">Buch der Lieder</title>
+                        <title level="m" type="sub">Aus der Harzreise</title>
+                        <author>Heine, Heinrich</author>
+                    </titleStmt>
+                    <publicationStmt>
+                        <publisher>Hoffmann und Campe</publisher>
+                        <pubPlace>Hamburg</pubPlace>
+                        <date>1827</date>
+                        <availability>
+                            <p>Gemeinfrei, keine Nutzungsbeschränkungen</p>
+                        </availability>
+                    </publicationStmt>
+                </biblFull>
+            </sourceDesc>
+        </fileDesc>
+    </teiHeader>
+    <text>
+        <body>
+            <pb n="302"/>
+            <head>Auf dem Brocken.</head>
+            <lg type="stanza">
+                <l>Heller wird es schon im Osten</l>
+                <l>Durch der Sonne kleines Glimmen,</l>
+                <l>Weit und breit die Bergesgipfel,</l>
+                <l>In dem Nebelmeere schwimmen.</l>
+            </lg>
+            <lg type="stanza">
+                <l n="5">Hätt’ ich Siebenmeilenstiefel,</l>
+                <l>Lief ich, mit der Hast des Windes,</l>
+                <l>Ueber jene Bergesgipfel,</l>
+                <l>Nach dem Haus des lieben Kindes.</l>
+            </lg>
+            <lg type="stanza">
+                <l>Von dem Bettchen, wo sie schlummert,</l>
+                <l n="10">Zög’ ich leise die Gardinen,</l>
+                <l>Leise küßt’ ich ihre Stirne,</l>
+                <l>Leise ihres Munds Rubinen.</l>
+            </lg>
+            <lg type="stanza">
+                <l>Und noch leiser wollt’ ich flüstern</l>
+                <l>In die kleinen Lilien-Ohren:</l>
+                <l n="15">Denk’ im Traum, daß wir uns lieben,</l>
+                <l>Und daß wir uns nie verloren.</l>
+            </lg>
+        </body>
+    </text>
+</TEI>
