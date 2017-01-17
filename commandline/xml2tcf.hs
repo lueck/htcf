@@ -6,7 +6,9 @@ import Text.XML.HXT.Core
 import Data.Maybe
 
 import Text.XML.TCF.Parser.ConfigParser
+import Text.XML.TCF.Parser.TcfLayerParser
 import Text.XML.TCF.Parser.TextLayerParser
+import Text.XML.TCF.Parser.StructureLayerParser
 import Text.XML.TCF.Parser.TcfElement
 
 data Convert =
@@ -28,7 +30,9 @@ run (Convert configFile fName) = do
   textLayer <- runX (readDocument [withValidate no] fName >>>
                      propagateNamespaces //>
                      hasName "text" >>>
-                     multi isText >>> mkTcfText
+                     multi mkTcfElement
+                     --multi isText >>> mkTcfText
+                     --multi isElem >>> mkTcfStructure
                     )
   print $ propagateOffsets textLayer
 

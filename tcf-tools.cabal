@@ -21,6 +21,7 @@ library
                    , Text.XML.TCF.Parser.ConfigParser
                    , Text.XML.TCF.Parser.TextLayerParser
                    , Text.XML.TCF.Parser.StructureLayerParser
+                   , Text.XML.TCF.Parser.TcfLayerParser
                    , Text.XML.TCF.Parser.TcfElement
                    , Text.XML.TCF.Parser.Position
   -- other-modules:       
