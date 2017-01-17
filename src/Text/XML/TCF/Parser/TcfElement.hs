@@ -1,8 +1,11 @@
 module Text.XML.TCF.Parser.TcfElement
   ( TcfElement (..)
+  , isTcfText
+  , isTcfStructure
   , tcfTextLen
   , dupWithNewTextPos
   , propagateOffsets
+  , serialize
   )
   where
 
@@ -24,6 +27,14 @@ data TcfElement =
   , srcEnd :: XmlPosition          -- ^ end position in end
   } deriving (Show)
 
+isTcfText :: TcfElement -> Bool
+isTcfText (TcfText _ _ _) = True
+isTcfText _ = False
+
+isTcfStructure :: TcfElement -> Bool
+isTcfStructure (TcfStructure _ _ _ _ _) = True
+isTcfStructure _ = False
+
 tcfTextLen :: TcfElement -> Int
 tcfTextLen (TcfText t _ _) = length t
 tcfTextLen _ = 0
@@ -38,6 +49,7 @@ propagateOffsets :: [TcfElement] -> [TcfElement]
 propagateOffsets xs = propagateOffsets' 0 xs
   where
     propagateOffsets' :: TextPosition -> [TcfElement] -> [TcfElement]
+    propagateOffsets' i [] = []
     propagateOffsets' i (x:[]) = [dup x i]
     propagateOffsets' i (x:xs) = dup x i : propagateOffsets' (i+(tcfTextLen x)+(incValue x)) xs
     dup = dupWithNewTextPos
@@ -45,3 +57,7 @@ propagateOffsets xs = propagateOffsets' 0 xs
     -- FIXME: Do we really need this incrementation? Verification needed!
     incValue (TcfText _ _ _) = 1
     incValue _ = 0
+
+serialize :: TcfElement -> String
+serialize (TcfText t _ _) = t
+serialize (TcfStructure qN _ _ _ _) = "{{ " ++ show qN ++ " }}"

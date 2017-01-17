@@ -11,8 +11,12 @@ import Text.XML.TCF.Parser.TcfElement
 
 data Convert =
   Convert { configFile :: Maybe String
+          , outputMethod :: Maybe OutputMethod
+          , outputStructure :: Bool
           , inFile :: String
           }
+
+data OutputMethod = Raw | PrettyList
 
 convert_ :: Parser Convert
 convert_ = Convert
@@ -20,17 +24,34 @@ convert_ = Convert
                             <> long "config"
                             <> help "Specify a config file."
                             <> metavar "CONFIGFILE" ))
+  <*> optional ((flag' Raw (short 'r'
+                             <> long "raw"
+                             <> help "Output in raw format."))
+                <|>
+                (flag' PrettyList (short 'u'
+                                    <> long "human"
+                                    <> help "Output formatted human readable.")))
+  <*> flag True False (short 'S'
+                       <> long "-no-structure"
+                       <> help "Do not output structure layer.")
   <*> argument str (metavar "INFILE")
 
 run :: Convert -> IO ()
-run (Convert configFile fName) = do
+run (Convert configFile outputMethod outputStructure fName) = do
   config <- runConfigParser $ fromMaybe "config.xml" configFile
-  textLayer <- runX (readDocument [withValidate no] fName >>>
-                     propagateNamespaces //>
-                     hasName "text" >>>
-                     multi mkTcfElement
-                    )
-  print $ propagateOffsets textLayer
+  parsed <- runX (readDocument [withValidate no] fName >>>
+                  propagateNamespaces //>
+                  hasName "text" >>>
+                  multi parserArrow
+                 )
+  writeOut parsed
+  where writeOut = case outputMethod of
+          Just Raw -> print . propagateOffsets
+          Just PrettyList -> putStrLn . concatMap serialize . propagateOffsets
+          otherwise -> print . propagateOffsets
+        parserArrow
+          | outputStructure = mkTcfElement
+          | otherwise = (isText >>> mkTcfText)
 
 main :: IO ()
 main = execParser opts >>= run
