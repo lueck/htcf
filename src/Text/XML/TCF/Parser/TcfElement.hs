@@ -10,17 +10,18 @@ import Text.XML.HXT.Core
 
 import Text.XML.TCF.Parser.Position
        
-data TcfElement = TcfText
-  { text :: String
-  , textOffset :: TextPosition
-  , xmlOffset :: XmlPosition
+data TcfElement =
+  TcfText                          -- ^ constituent of text layer
+  { text :: String                 -- ^ the text
+  , textOffset :: TextPosition     -- ^ offset in text layer
+  , srcOffset :: XmlPosition       -- ^ offset in source
   }
-  | TcfStructure
-  { qName :: QName
-  , textStart :: TextPosition
-  , textEnd :: TextPosition
-  , xmlStart :: XmlPosition
-  , xmlEnd :: XmlPosition
+  | TcfStructure                   -- ^ constituent of structure layer
+  { qName :: QName                 -- ^ qualified name of tag
+  , textStart :: TextPosition      -- ^ start position in text layer
+  , textEnd :: TextPosition        -- ^ end position in text layer
+  , srcStart :: XmlPosition        -- ^ start position in source
+  , srcEnd :: XmlPosition          -- ^ end position in end
   } deriving (Show)
 
 tcfTextLen :: TcfElement -> Int
