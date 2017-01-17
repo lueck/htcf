@@ -10,12 +10,12 @@ import Text.XML.HXT.Core
 
 import Text.XML.TCF.Parser.Position
        
-data TcfElement = PositionedText
+data TcfElement = TcfText
   { text :: String
   , textOffset :: TextPosition
   , xmlOffset :: XmlPosition
   }
-  | PositionedStructure
+  | TcfStructure
   { qName :: QName
   , textStart :: TextPosition
   , textEnd :: TextPosition
@@ -24,14 +24,14 @@ data TcfElement = PositionedText
   } deriving (Show)
 
 tcfTextLen :: TcfElement -> Int
-tcfTextLen (PositionedText t _ _) = length t
+tcfTextLen (TcfText t _ _) = length t
 tcfTextLen _ = 0
 
 dupWithNewTextPos :: TcfElement -> TextPosition -> TcfElement
-dupWithNewTextPos (PositionedText tx _ xOffset) i =
-  PositionedText tx i xOffset
-dupWithNewTextPos (PositionedStructure qN _ _ xStart xEnd) i =
-  PositionedStructure qN i 0 xStart xEnd
+dupWithNewTextPos (TcfText tx _ xOffset) i =
+  TcfText tx i xOffset
+dupWithNewTextPos (TcfStructure qN _ _ xStart xEnd) i =
+  TcfStructure qN i 0 xStart xEnd
 
 propagateOffsets :: [TcfElement] -> [TcfElement]
 propagateOffsets xs = propagateOffsets' 0 xs
@@ -40,7 +40,7 @@ propagateOffsets xs = propagateOffsets' 0 xs
     propagateOffsets' i (x:[]) = [dup x i]
     propagateOffsets' i (x:xs) = dup x i : propagateOffsets' (i+(tcfTextLen x)+(incValue x)) xs
     dup = dupWithNewTextPos
-    -- Increment by 1 for PositionedText, but 0 for others
+    -- Increment by 1 for TcfText, but 0 for others
     -- FIXME: Do we really need this incrementation? Verification needed!
-    incValue (PositionedText _ _ _) = 1
+    incValue (TcfText _ _ _) = 1
     incValue _ = 0
