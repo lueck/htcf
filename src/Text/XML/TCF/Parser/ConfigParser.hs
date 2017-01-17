@@ -1,5 +1,6 @@
 module Text.XML.TCF.Parser.ConfigParser
   ( stripped
+  , runConfigParser
   ) where
 
 import Text.XML.HXT.Core
@@ -12,8 +13,7 @@ stripped fname =
   getChildren >>>
   isElem >>> hasName "strippedText" >>>
   getChildren >>>
-  isElem >>> hasName "simpleElement" >>>
-  strippedQName 
+  isElem >>> hasName "simpleElement" >>> strippedQName
 
 strippedQName :: IOSArrow XmlTree QName
 strippedQName =
@@ -21,8 +21,8 @@ strippedQName =
   getAttrValue0 "name" >>>
   arr (uncurry mkNsName)
 
-play :: FilePath -> IO ()
-play fname = do
+runConfigParser :: FilePath -> IO [QName]
+runConfigParser fname = do
   results <- runX (stripped fname)
-  print results
+  return results
 
