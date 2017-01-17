@@ -3,7 +3,7 @@
 
 name:                tcf-tools
 version:             0.1.0.0
-synopsis:            Tools for handling files in Text Corpus Format (TCF)
+synopsis:            Library and executables for handling files in Text Corpus Format (TCF)
 -- description:         
 homepage:            https://gibhub.com/lueck/tcf-tools
 license:             GPL-3
@@ -17,13 +17,29 @@ extra-source-files:  ChangeLog.md
 cabal-version:       >=1.10
 
 library
-  exposed-modules:     Text.XML.TCF.Arrow.ArrowXml
+  exposed-modules:   Text.XML.TCF.Arrow.ArrowXml
+                   , Text.XML.TCF.Parser.ConfigParser
+                   , Text.XML.TCF.Parser.TextLayerParser
+                   , Text.XML.TCF.Parser.StructureLayerParser
+                   , Text.XML.TCF.Parser.TcfElement
+                   , Text.XML.TCF.Parser.Position
   -- other-modules:       
   -- other-extensions:    
-  build-depends:       base >=4.9 && <4.10
-                     , hxt
-  hs-source-dirs:      src
-  default-language:    Haskell2010
+  build-depends:     base >=4.9 && <4.10
+                   , hxt
+  hs-source-dirs:    src
+  default-language:  Haskell2010
+
+
+Executable xml2tcf
+  main-is:           xml2tcf.hs
+  build-depends:     base >=4.9 && <4.10
+                   , hxt
+  build-depends:     tcf-tools
+                   , optparse-applicative >= 0.12.1.0
+  hs-source-dirs:    commandline
+  default-language:  Haskell2010
+
 
 Test-Suite test-main
   type:              exitcode-stdio-1.0
