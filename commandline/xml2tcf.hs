@@ -8,6 +8,7 @@ import Data.Maybe
 import Text.XML.TCF.Parser.ConfigParser
 import Text.XML.TCF.Parser.TcfLayerParser
 import Text.XML.TCF.Parser.TcfElement
+import Text.XML.TCF.Parser.Tokenizer
 
 data Convert =
   Convert { configFile :: Maybe String
@@ -48,7 +49,7 @@ run (Convert configFile outputMethod outputStructure fName) = do
   where writeOut = case outputMethod of
           Just Raw -> print . propagateOffsets
           Just PrettyList -> putStrLn . concatMap serialize . propagateOffsets
-          otherwise -> print . propagateOffsets
+          otherwise -> print . tokenize . propagateOffsets
         parserArrow
           | outputStructure = mkTcfElement
           | otherwise = (isText >>> mkTcfText)

@@ -22,6 +22,7 @@ library
                    , Text.XML.TCF.Parser.TcfLayerParser
                    , Text.XML.TCF.Parser.TcfElement
                    , Text.XML.TCF.Parser.Position
+                   , Text.XML.TCF.Parser.Tokenizer
   -- other-modules:       
   -- other-extensions:    
   build-depends:     base >=4.9 && <4.10
