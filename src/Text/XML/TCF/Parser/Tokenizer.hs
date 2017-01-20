@@ -42,7 +42,7 @@ isBreak :: Char -> Bool
 isBreak c = isSpace c || isPunctuation c
 
 hasBreak :: String -> Bool
-hasBreak s = hasSpace s || hasPunctuation s
+hasBreak s = isJust $ find isBreak s
 
 tokenize :: [TcfElement] -> [Token]
 tokenize [] = []
@@ -83,7 +83,8 @@ tokenize ((TcfText t tOffset sOffset):xs)
                                   (shiftTextPosition tOffset 1)
                                   (shiftXmlPosition sOffset 1))
                                  : xs))
-  -- word token
+  -- word token. Letters here means letters, digits, marks etc., but
+  -- neither spaces nor punctuation
   | otherwise = (Token (take letters t) tOffset sOffset)
                 : (tokenize
                    ((TcfText
