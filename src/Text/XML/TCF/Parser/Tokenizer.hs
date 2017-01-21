@@ -46,11 +46,11 @@ hasBreak s = isJust $ find isBreak s
 
 tokenize :: [TcfElement] -> [Token]
 tokenize [] = []
--- drop structure
+-- drop structure: when at head, second, third, forth
 tokenize ((TcfStructure _ _ _ _ _):xs) = tokenize xs
--- drop structure
-tokenize ((TcfText t tOffset sOffset):(TcfStructure _ _ _ _ _):xs)
-  = tokenize ((TcfText t tOffset sOffset) : xs)
+tokenize (x:(TcfStructure _ _ _ _ _):xs) = tokenize (x:xs)
+tokenize (x:x2:(TcfStructure _ _ _ _ _):xs) = tokenize (x:x2:xs)
+tokenize (x:x2:x3:(TcfStructure _ _ _ _ _):xs) = tokenize (x:x2:x3:xs)
 tokenize ((TcfText t1 tOffset1 sOffset1) : (TcfText t2 tOffset2 sOffset2) : xs)
   -- continueing token, i.e. a token that spans more than one TcfText
   | (0 < length t1) && (not $ hasBreak t1) && (not $ isBreak $ head t2)
