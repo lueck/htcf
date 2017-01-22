@@ -9,7 +9,7 @@ import Text.XML.TCF.Parser.ConfigParser
 
 configFile = "testsuite/Test/Text/XML/TCF/Parser/config.xml"
 
-test_stripped = do
+test_runConfigParser = do
   results <- runConfigParser configFile
   assertEqual
     [(TextRoot (mkNsName "http://www.tei-c.org/ns/1.0" "text")),
@@ -20,3 +20,22 @@ test_stripped = do
      (Hyphen '\172')]
     results
 
+test_getters = do
+  results <- runConfigParser configFile
+  
+  assertEqual
+    (Just $ mkNsName "http://www.tei-c.org/ns/1.0" "text")
+    (getTextRoot results)
+
+  assertEqual
+    "-¬"
+    (getHyphens results)
+
+  assertEqual
+    [(mkNsName "http://www.tei-c.org/ns/1.0" "lb")
+    ,(mkNsName "http://www.tei-c.org/ns/1.0" "l")]
+    (getLineBreaks results)
+
+  assertEqual
+    [(mkNsName "http://www.tei-c.org/ns/1.0" "fw")]
+    (getDroppedTrees results)
