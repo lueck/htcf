@@ -27,9 +27,6 @@ test_nameIn = do
      "main = interact (const \"hello world\\n\")\n"]
     results
 
--- | Unit test for qNameIn. Turns out, that QNames should be made with
--- 'mkQName', not with 'mkNsName'. The prefix passed to mkQName has no
--- effect on result of Eq.
 test_qNameIn = do
   results <- runX (readDocument [withValidate no] fileA >>>
                    propagateNamespaces >>>
