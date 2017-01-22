@@ -70,20 +70,20 @@ parseConfig =
 
 textRoot :: IOSArrow XmlTree Config
 textRoot =
-  getAttrValue0 "namespace" &&&
-  getAttrValue0 "name" >>>
+  getAttrValue0 "name" &&&
+  getAttrValue0 "namespace" >>>
   arr (TextRoot . (uncurry mkNsName))
 
 droppedTreeSimple :: IOSArrow XmlTree Config
 droppedTreeSimple =
-  getAttrValue0 "namespace" &&&
-  getAttrValue0 "name" >>>
+  getAttrValue0 "name" &&&
+  getAttrValue0 "namespace" >>>
   arr (DroppedTree . (uncurry mkNsName))
 
 linebreak :: IOSArrow XmlTree Config
 linebreak =
-  getAttrValue0 "namespace" &&&
-  getAttrValue0 "name" >>>
+  getAttrValue0 "name" &&&
+  getAttrValue0 "namespace" >>>
   arr (LineBreak . (uncurry mkNsName))
 
 hyphen :: IOSArrow XmlTree Config

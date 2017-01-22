@@ -12,10 +12,10 @@ configFile = "testsuite/Test/Text/XML/TCF/Parser/config.xml"
 test_runConfigParser = do
   results <- runConfigParser configFile
   assertEqual
-    [(TextRoot (mkNsName "http://www.tei-c.org/ns/1.0" "text")),
-     (DroppedTree (mkNsName "http://www.tei-c.org/ns/1.0" "fw")),
-     (LineBreak (mkNsName "http://www.tei-c.org/ns/1.0" "lb")),
-     (LineBreak (mkNsName "http://www.tei-c.org/ns/1.0" "l")),
+    [(TextRoot (mkNsName "text" "http://www.tei-c.org/ns/1.0")),
+     (DroppedTree (mkNsName "fw" "http://www.tei-c.org/ns/1.0")),
+     (LineBreak (mkQName "tei" "lb" "http://www.tei-c.org/ns/1.0")),
+     (LineBreak (mkQName "t" "l" "http://www.tei-c.org/ns/1.0")),
      (Hyphen '-'),
      (Hyphen '\172')]
     results
@@ -24,7 +24,7 @@ test_getters = do
   results <- runConfigParser configFile
   
   assertEqual
-    (Just $ mkNsName "http://www.tei-c.org/ns/1.0" "text")
+    (Just $ mkNsName "text" "http://www.tei-c.org/ns/1.0")
     (getTextRoot results)
 
   assertEqual
@@ -32,10 +32,10 @@ test_getters = do
     (getHyphens results)
 
   assertEqual
-    [(mkNsName "http://www.tei-c.org/ns/1.0" "lb")
-    ,(mkNsName "http://www.tei-c.org/ns/1.0" "l")]
+    [(mkQName "prefix" "lb" "http://www.tei-c.org/ns/1.0")
+    ,(mkQName "TEI" "l" "http://www.tei-c.org/ns/1.0")]
     (getLineBreaks results)
 
   assertEqual
-    [(mkNsName "http://www.tei-c.org/ns/1.0" "fw")]
+    [(mkNsName "fw" "http://www.tei-c.org/ns/1.0")]
     (getDroppedTrees results)
