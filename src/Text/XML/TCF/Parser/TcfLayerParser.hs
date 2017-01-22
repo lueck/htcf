@@ -1,13 +1,17 @@
 module Text.XML.TCF.Parser.TcfLayerParser
   ( mkTcfElement
+  , mkTcfElementButStructure
   , mkTcfText
   , mkTcfStructure
+  , mkTcfLineBreak
   ) where
 
 import Text.XML.HXT.Core
 
 import Text.XML.TCF.Parser.TcfElement
 import Text.XML.TCF.Parser.Position
+import Text.XML.TCF.Parser.ConfigParser
+import Text.XML.TCF.Arrow.ArrowXml
 
 -- | @mkTcfElement@ can be used to generate a (deterministic) list of
 -- 'TcfElement's, which can then be feed to the tokenizer or a
@@ -16,10 +20,16 @@ import Text.XML.TCF.Parser.Position
 -- tokenizer information.
 --
 -- Usage: @multi mkTcfElement@
-mkTcfElement :: IOSArrow XmlTree TcfElement
-mkTcfElement =
+mkTcfElement :: [Config] -> IOSArrow XmlTree TcfElement
+mkTcfElement cfg =
   (isElem >>> mkTcfStructure) <+>
-  (isText >>> mkTcfText)
+  (isText >>> mkTcfText) <+>
+  (isElem >>> mkTcfLineBreak cfg)
+
+mkTcfElementButStructure :: [Config] -> IOSArrow XmlTree TcfElement
+mkTcfElementButStructure cfg =
+  (isText >>> mkTcfText) <+>
+  (isElem >>> mkTcfLineBreak cfg)
 
 -- | An arrow for parsing text nodes into the text layer
 --
@@ -42,3 +52,8 @@ mkTcfStructure =
   arr getXmlPosition >>>
   arr (\(qN, (tStart, (tEnd, xPos)))
        -> TcfStructure qN tStart tEnd (fst xPos) (snd xPos))
+
+mkTcfLineBreak :: (ArrowXml a) => [Config] -> a XmlTree TcfElement
+mkTcfLineBreak cfg =
+  (qNameIn $ getLineBreaks cfg) >>>
+  arr (const TcfLineBreak)
