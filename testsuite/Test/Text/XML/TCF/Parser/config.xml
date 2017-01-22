@@ -1,7 +1,22 @@
 <config>
-  <strippedText>
+  <textRoot
+      namespace="http://www.tei-c.org/ns/1.0"
+      name="text"/>
+  <droppedTree>
     <simpleElement
 	namespace="http://www.tei-c.org/ns/1.0"
 	name="fw"/>
-  </strippedText>
+  </droppedTree>
+  <tokenizerControl>
+    <linebreak
+	namespace="http://www.tei-c.org/ns/1.0"
+	name="lb"/>
+    <linebreak
+	namespace="http://www.tei-c.org/ns/1.0"
+	name="l"/>
+  </tokenizerControl>
+  <specialCharacter>
+    <hyphen char="-"/>
+    <hyphen char="¬"/><!-- DTA uses not as hyphen -->
+  </specialCharacter>
 </config>
