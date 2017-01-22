@@ -27,6 +27,30 @@ test_nameIn = do
      "main = interact (const \"hello world\\n\")\n"]
     results
 
+-- | Unit test for qNameIn. Turns out, that QNames should be made with
+-- 'mkQName', not with 'mkNsName'. The prefix passed to mkQName has no
+-- effect on result of Eq.
+test_qNameIn = do
+  results <- runX (readDocument [withValidate no] fileA >>>
+                   propagateNamespaces >>>
+                   getChildren >>>
+                   isElem >>> hasName "html" >>>
+                   getChildren >>>
+                   isElem >>> hasName "body" >>>
+                   getChildren >>>
+                   --isElem >>> hasQName (mkQName "xx" "pre" "http://www.w3.org/1999/xhtml") >>>
+                   --isElem >>> hasQName (mkNsName "http://www.w3.org/1999/xhtml" "pre") >>>
+                   isElem >>> qNameIn [(mkQName "xx" "pre" "http://www.w3.org/1999/xhtml")
+                                      ,(mkQName "xx" "code" "http://www.w3.org/1999/xhtml")] >>>
+                   getChildren >>>
+                   getText)
+  assertEqual
+    ["main = putStrLn \"hello world\"\n",
+     "$ runghc hello1.hs",
+     "Prelude> :load hello1.hs\n*Main> main\n",
+     "main = interact (const \"hello world\\n\")\n"]
+    results
+
 -- stripName may be put anywhere
 test_stripName = do
   results <- runX (readDocument [withValidate no] fileA >>>

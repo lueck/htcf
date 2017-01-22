@@ -1,5 +1,6 @@
 module Text.XML.TCF.Arrow.ArrowXml
   ( nameIn
+  , qNameIn
   , stripName
   , stripNames
   ) where
@@ -9,6 +10,10 @@ import Text.XML.HXT.Core
 nameIn :: (ArrowXml a) => [String] -> a XmlTree XmlTree
 nameIn names = (getName >>> isA (flip elem names)) `guards` this
 {-# INLINE nameIn #-}
+
+qNameIn :: (ArrowXml a) => [QName] -> a XmlTree XmlTree
+qNameIn qNames = (getQName >>> isA (flip elem qNames)) `guards` this
+{-# INLINE qNameIn #-}
 
 stripName :: (ArrowXml a) => String -> a XmlTree XmlTree
 stripName n = processTopDown (filterA $ neg (hasName n))
