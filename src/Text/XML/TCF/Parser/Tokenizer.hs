@@ -45,9 +45,9 @@ isBreak c = isSpace c || isPunctuation c
 hasBreak :: String -> Bool
 hasBreak s = isJust $ find isBreak s
 
-
--- next: unbreak hyphened tokens spanning linebreaks
-
+-- | @tokenize@ is the tokenizer function. It takes a configuration
+-- (cf. 'Config') and a list of 'TcfElement's as parameters and
+-- returns a list of 'Token's.
 tokenize :: [Config] -> [TcfElement] -> [Token]
 tokenize cfg tcf = tokenize' tcf
   where
