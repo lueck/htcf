@@ -43,16 +43,19 @@ run (Convert configFile outputMethod outputStructure fName) = do
   parsed <- runX (readDocument [withValidate no] fName >>>
                   propagateNamespaces //>
                   hasName "text" >>>
-                  multi parserArrow
+                  multi (parserArrow config)
                  )
-  writeOut parsed
-  where writeOut = case outputMethod of
-          Just Raw -> print . propagateOffsets
-          Just PrettyList -> putStrLn . concatMap serialize . propagateOffsets
-          otherwise -> print . tokenize . propagateOffsets
-        parserArrow
-          | outputStructure = mkTcfElement
-          | otherwise = (isText >>> mkTcfText)
+  writeOut (config, parsed)
+  where
+    writeOut :: ([Config], [TcfElement]) -> IO ()
+    writeOut = case outputMethod of
+          Just Raw -> print . (uncurry (\_ -> propagateOffsets))
+          Just PrettyList -> putStrLn . concatMap serialize . (uncurry (\_ -> propagateOffsets))
+          otherwise -> print . (uncurry (\cfg -> tokenize cfg . propagateOffsets))
+    tokWithOffsets cfg p = tokenize cfg $ propagateOffsets p
+    parserArrow
+      | outputStructure = mkTcfElement
+      | otherwise = mkTcfElementButStructure
 
 main :: IO ()
 main = execParser opts >>= run
