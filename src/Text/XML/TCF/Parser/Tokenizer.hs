@@ -9,6 +9,7 @@ import Data.Maybe
 
 import Text.XML.TCF.Parser.Position
 import Text.XML.TCF.Parser.TcfElement
+import Text.XML.TCF.Parser.ConfigParser
 
 data Token =
   Token
@@ -44,54 +45,60 @@ isBreak c = isSpace c || isPunctuation c
 hasBreak :: String -> Bool
 hasBreak s = isJust $ find isBreak s
 
-tokenize :: [TcfElement] -> [Token]
-tokenize [] = []
--- drop structure: when at head, second, third, forth
-tokenize ((TcfStructure _ _ _ _ _):xs) = tokenize xs
-tokenize (x:(TcfStructure _ _ _ _ _):xs) = tokenize (x:xs)
-tokenize (x:x2:(TcfStructure _ _ _ _ _):xs) = tokenize (x:x2:xs)
-tokenize (x:x2:x3:(TcfStructure _ _ _ _ _):xs) = tokenize (x:x2:x3:xs)
-tokenize ((TcfText t1 tOffset1 sOffset1) : (TcfText t2 tOffset2 sOffset2) : xs)
-  -- continueing token, i.e. a token that spans more than one TcfText
-  | (0 < length t1) && (not $ hasBreak t1) && (not $ isBreak $ head t2)
-  = (Token (t1 ++ take letters t2) tOffset1 {-sOffset1 FIXME-} 666)
-    : tokenize ((TcfText
-                 (drop letters t2)
-                 (shiftTextPosition tOffset2 letters)
-                 (shiftTextPosition sOffset2 letters))
-                : xs)
-  -- token not continued in next TcfText
-  | (0 < length t1) && (not $ hasBreak t1) && (isBreak $ head t2)
-  = (Token t1 tOffset1 {-sOffset1 FIXME-} 777)
-    : tokenize ((TcfText t2 tOffset2 sOffset2) : xs)
+
+-- next: unbreak hyphened tokens spanning linebreaks
+
+tokenize :: [Config] -> [TcfElement] -> [Token]
+tokenize cfg tcf = tokenize' tcf
   where
-    letters = length $ takeWhile (not . isBreak) t2
-tokenize ((TcfText t tOffset sOffset):xs)
-  -- drop zero length string
-  | t == "" = tokenize xs
-  -- drop heading space
-  | isSpace $ head t = tokenize ((TcfText
-                                  (drop spaces t)
-                                  (shiftTextPosition tOffset spaces)
-                                  (shiftXmlPosition sOffset spaces))
-                                 : xs)
-  -- punctuation token
-  | isPunctuation $ head t = (Token ((head t):[]) tOffset sOffset)
-                             : (tokenize
-                                ((TcfText
-                                  (tail t)
-                                  (shiftTextPosition tOffset 1)
-                                  (shiftXmlPosition sOffset 1))
-                                 : xs))
-  -- word token. Letters here means letters, digits, marks etc., but
-  -- neither spaces nor punctuation
-  | otherwise = (Token (take letters t) tOffset sOffset)
-                : (tokenize
-                   ((TcfText
-                     (drop letters t)
-                     (shiftTextPosition tOffset letters)
-                     (shiftXmlPosition sOffset letters))
-                    : xs))
-  where
-    spaces = length $ takeWhile isSpace t
-    letters = length $ takeWhile (not . isBreak) t
+    tokenize' :: [TcfElement] -> [Token]
+    tokenize' [] = []
+    -- drop structure: when at head, second, third, fourth
+    tokenize' ((TcfStructure _ _ _ _ _):xs) = tokenize' xs
+    tokenize' (x:(TcfStructure _ _ _ _ _):xs) = tokenize' (x:xs)
+    tokenize' (x:x2:(TcfStructure _ _ _ _ _):xs) = tokenize' (x:x2:xs)
+    tokenize' (x:x2:x3:(TcfStructure _ _ _ _ _):xs) = tokenize' (x:x2:x3:xs)
+    tokenize' ((TcfText t1 tOffset1 sOffset1) : (TcfText t2 tOffset2 sOffset2) : xs)
+      -- continueing token, i.e. a token that spans more than one TcfText
+      | (0 < length t1) && (not $ hasBreak t1) && (not $ isBreak $ head t2)
+      = (Token (t1 ++ take letters t2) tOffset1 {-sOffset1 FIXME-} 666)
+        : tokenize' ((TcfText
+                      (drop letters t2)
+                      (shiftTextPosition tOffset2 letters)
+                      (shiftTextPosition sOffset2 letters))
+                     : xs)
+      -- token not continued in next TcfText
+      | (0 < length t1) && (not $ hasBreak t1) && (isBreak $ head t2)
+      = (Token t1 tOffset1 {-sOffset1 FIXME-} 777)
+        : tokenize' ((TcfText t2 tOffset2 sOffset2) : xs)
+      where
+        letters = length $ takeWhile (not . isBreak) t2
+    tokenize' ((TcfText t tOffset sOffset):xs)
+      -- drop zero length string
+      | t == "" = tokenize' xs
+      -- drop heading space
+      | isSpace $ head t = tokenize' ((TcfText
+                                       (drop spaces t)
+                                       (shiftTextPosition tOffset spaces)
+                                       (shiftXmlPosition sOffset spaces))
+                                      : xs)
+      -- punctuation token
+      | isPunctuation $ head t = (Token ((head t):[]) tOffset sOffset)
+                                 : (tokenize'
+                                    ((TcfText
+                                      (tail t)
+                                      (shiftTextPosition tOffset 1)
+                                      (shiftXmlPosition sOffset 1))
+                                     : xs))
+      -- word token. Letters here means letters, digits, marks etc., but
+      -- neither spaces nor punctuation
+      | otherwise = (Token (take letters t) tOffset sOffset)
+                    : (tokenize'
+                       ((TcfText
+                         (drop letters t)
+                         (shiftTextPosition tOffset letters)
+                         (shiftXmlPosition sOffset letters))
+                        : xs))
+      where
+        spaces = length $ takeWhile isSpace t
+        letters = length $ takeWhile (not . isBreak) t
