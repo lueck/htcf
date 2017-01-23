@@ -58,7 +58,6 @@ tokenize cfg tcf = tokenize' tcf
     tokenize' (x:(TcfStructure _ _ _ _ _):xs) = tokenize' (x:xs)
     tokenize' (x:x2:(TcfStructure _ _ _ _ _):xs) = tokenize' (x:x2:xs)
     tokenize' (x:x2:x3:(TcfStructure _ _ _ _ _):xs) = tokenize' (x:x2:x3:xs)
-    tokenize' ((TcfLineBreak):xs) = tokenize' xs
     -- continueing token
     tokenize' ((TcfText t1 tOffset1 sOffset1) : (TcfText t2 tOffset2 sOffset2) : xs)
       -- a continueing token spans more than one TcfText without break
@@ -98,6 +97,8 @@ tokenize cfg tcf = tokenize' tcf
       where
         spaces = length $ takeWhile isSpace t2
         letters = length $ takeWhile (not . isBreak) (drop spaces t2)
+    -- drop linebreaks that were not preceded by a hyphen
+    tokenize' ((TcfLineBreak):xs) = tokenize' xs
     -- cases not spanning multiple TcfTexts
     tokenize' ((TcfText t tOffset sOffset):xs)
       -- drop zero length string
