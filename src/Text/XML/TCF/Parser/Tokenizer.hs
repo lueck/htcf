@@ -64,6 +64,7 @@ tokenize cfg tcf = tokenize' tcf
     tokenize' ((TcfText t1 tOffset1 sOffset1) : (TcfText t2 tOffset2 sOffset2) : xs)
       -- a continueing token spans more than one TcfText without break
       | (not $ null t1) && (not $ hasBreak t1) && (not $ isBreak $ head t2)
+      -- FIXME: This only spans 2 text elements! Think further!
       = (Token (t1 ++ take letters t2) tOffset1 {-sOffset1 FIXME-} 666)
         : tokenize' ((TcfText
                       (drop letters t2)
@@ -88,6 +89,7 @@ tokenize cfg tcf = tokenize' tcf
       | (not $ null t1) && -- first text must be non-empty
         (not $ hasBreak t1) && -- first text is a word. May there be trailing whitespace?
         (elem (last t1) $ getHyphens cfg) -- trailing hyphen in first text
+        -- FIXME: The tokens might span multiple text nodes after the linebreak
       = (Token
          ((init t1) ++ (take letters $ drop spaces t2))
          tOffset1 sOffset1)
