@@ -58,8 +58,9 @@ tokenize cfg tcf = tokenize' tcf
     tokenize' (x:(TcfStructure _ _ _ _ _):xs) = tokenize' (x:xs)
     tokenize' (x:x2:(TcfStructure _ _ _ _ _):xs) = tokenize' (x:x2:xs)
     tokenize' (x:x2:x3:(TcfStructure _ _ _ _ _):xs) = tokenize' (x:x2:x3:xs)
+    -- continueing token
     tokenize' ((TcfText t1 tOffset1 sOffset1) : (TcfText t2 tOffset2 sOffset2) : xs)
-      -- continueing token, i.e. a token that spans more than one TcfText
+      -- a continueing token spans more than one TcfText without break
       | (0 < length t1) && (not $ hasBreak t1) && (not $ isBreak $ head t2)
       = (Token (t1 ++ take letters t2) tOffset1 {-sOffset1 FIXME-} 666)
         : tokenize' ((TcfText
@@ -67,7 +68,7 @@ tokenize cfg tcf = tokenize' tcf
                       (shiftTextPosition tOffset2 letters)
                       (shiftTextPosition sOffset2 letters))
                      : xs)
-      -- token not continued in next TcfText
+      -- token not continued in next TcfText; FIXME: not needed!?
       | (0 < length t1) && (not $ hasBreak t1) && (isBreak $ head t2)
       = (Token t1 tOffset1 {-sOffset1 FIXME-} 777)
         : tokenize' ((TcfText t2 tOffset2 sOffset2) : xs)
