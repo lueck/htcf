@@ -53,7 +53,9 @@ tokenize cfg tcf = tokenize' tcf
   where
     tokenize' :: [TcfElement] -> [Token]
     tokenize' [] = []
-    -- drop structure: when at head, second, third, fourth
+    -- drop structure: when at head, second, third, fourth. This
+    -- should go as far as needed for the patterns below, which must
+    -- not be interleaved with TcfStructures.
     tokenize' ((TcfStructure _ _ _ _ _):xs) = tokenize' xs
     tokenize' (x:(TcfStructure _ _ _ _ _):xs) = tokenize' (x:xs)
     tokenize' (x:x2:(TcfStructure _ _ _ _ _):xs) = tokenize' (x:x2:xs)
