@@ -58,10 +58,11 @@ tokenize cfg tcf = tokenize' tcf
     tokenize' (x:(TcfStructure _ _ _ _ _):xs) = tokenize' (x:xs)
     tokenize' (x:x2:(TcfStructure _ _ _ _ _):xs) = tokenize' (x:x2:xs)
     tokenize' (x:x2:x3:(TcfStructure _ _ _ _ _):xs) = tokenize' (x:x2:x3:xs)
+    tokenize' ((TcfLineBreak):xs) = tokenize' xs
     -- continueing token
     tokenize' ((TcfText t1 tOffset1 sOffset1) : (TcfText t2 tOffset2 sOffset2) : xs)
       -- a continueing token spans more than one TcfText without break
-      | (0 < length t1) && (not $ hasBreak t1) && (not $ isBreak $ head t2)
+      | (not $ null t1) && (not $ hasBreak t1) && (not $ isBreak $ head t2)
       = (Token (t1 ++ take letters t2) tOffset1 {-sOffset1 FIXME-} 666)
         : tokenize' ((TcfText
                       (drop letters t2)
@@ -69,11 +70,35 @@ tokenize cfg tcf = tokenize' tcf
                       (shiftTextPosition sOffset2 letters))
                      : xs)
       -- token not continued in next TcfText; FIXME: not needed!?
-      | (0 < length t1) && (not $ hasBreak t1) && (isBreak $ head t2)
+      | (not $ null t1) && (not $ hasBreak t1) && (isBreak $ head t2)
       = (Token t1 tOffset1 {-sOffset1 FIXME-} 777)
         : tokenize' ((TcfText t2 tOffset2 sOffset2) : xs)
       where
         letters = length $ takeWhile (not . isBreak) t2
+    -- hyphenation at linebreak
+    tokenize' ((TcfText t1 tOffset1 sOffset1):(TcfLineBreak):(TcfText t2 tOffset2 sOffset2):xs)
+      -- case: drop white space text node after linebreak
+      | (not $ null t1) && -- first text must be non-empty
+        (not $ hasBreak t1) && -- may there be trailing whitespace?
+        (elem (last t1) $ getHyphens cfg) && -- trailing hyphen in t1
+        (null $ dropWhile isSpace t2) -- drop white space node after linebreak
+      = tokenize' ((TcfText t1 tOffset1 sOffset1):(TcfLineBreak):xs)
+      -- case: continue token after linebreak
+      | (not $ null t1) && -- first text must be non-empty
+        (not $ hasBreak t1) && -- first text is a word. May there be trailing whitespace?
+        (elem (last t1) $ getHyphens cfg) -- trailing hyphen in first text
+      = (Token
+         ((init t1) ++ (take letters $ drop spaces t2))
+         tOffset1 sOffset1)
+        : (tokenize' ((TcfText
+                       (drop (letters+spaces) t2)
+                       (shiftTextPosition tOffset2 (letters+spaces))
+                       (shiftXmlPosition sOffset2 (letters+spaces)))
+                      : xs))
+      where
+        spaces = length $ takeWhile isSpace t2
+        letters = length $ takeWhile (not . isBreak) (drop spaces t2)
+    -- cases not spanning multiple TcfTexts
     tokenize' ((TcfText t tOffset sOffset):xs)
       -- drop zero length string
       | t == "" = tokenize' xs
