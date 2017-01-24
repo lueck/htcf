@@ -23,6 +23,9 @@ library
                    , Text.XML.TCF.Parser.TcfElement
                    , Text.XML.TCF.Parser.Position
                    , Text.XML.TCF.Parser.Tokenizer
+                   , HTCF.Utils
+                   , HTCF.ReadTcf
+                   , HTCF.Layers
   -- other-modules:       
   -- other-extensions:    
   build-depends:     base >=4.9 && <4.10
@@ -35,7 +38,16 @@ library
 Executable xml2tcf
   main-is:           xml2tcf.hs
   build-depends:     base >=4.9 && <4.10
-                   , bytestring >= 0.10.8.1
+                   , hxt
+  build-depends:     tcf-tools
+                   , optparse-applicative >= 0.12.1.0
+  hs-source-dirs:    commandline
+  default-language:  Haskell2010
+
+
+Executable readtcf
+  main-is:           readtcf.hs
+  build-depends:     base >=4.9 && <4.10
                    , hxt
   build-depends:     tcf-tools
                    , optparse-applicative >= 0.12.1.0
@@ -47,7 +59,6 @@ Test-Suite test-main
   type:              exitcode-stdio-1.0
   main-is:           TestMain.hs
   build-depends:     base >=4.9 && <4.10
-                   , bytestring >= 0.10.8.1
                    , hxt
   build-depends:     HTF >=0.10.1
                    , bytestring
