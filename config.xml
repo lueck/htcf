@@ -19,4 +19,12 @@
     <hyphen char="-"/>
     <hyphen char="¬"/><!-- DTA uses not as hyphen -->
   </specialCharacter>
+  <tcf>
+    <tcfNamespace
+	namespace="http://www.dspin.de/data/textcorpus"/>
+    <idBase base="16"/>
+    <idPrefix
+	delimiter="_"
+	length="2"/>
+  </tcf>
 </config>

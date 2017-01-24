@@ -52,3 +52,18 @@ test_getters = do
   assertEqual
     '_'
     (getTcfIdPrefixDelimiter results)
+
+  assertEqual
+    2
+    (getTcfIdPrefixLength results)
+
+  assertEqual
+    Length
+    (getTcfIdUnprefixMethod results)
+
+test_Setters = do
+  let config = setTcfIdPrefixLength 10 []
+
+  assertEqual
+    10
+    (getTcfIdPrefixLength config)

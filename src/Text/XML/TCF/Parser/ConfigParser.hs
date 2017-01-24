@@ -4,6 +4,7 @@
 
 module Text.XML.TCF.Parser.ConfigParser
   ( Config (..)
+  , UnprefixMethod (..)
   , runConfigParser
   , parseConfig
   , getTextRoot
@@ -12,15 +13,25 @@ module Text.XML.TCF.Parser.ConfigParser
   , getDroppedTrees
   , getTcfTextCorpusNamespace
   , getTcfIdBase
+  , setTcfIdBase
   , getTcfIdPrefixDelimiter
+  , getTcfIdPrefixLength
+  , setTcfIdPrefixLength
+  , getTcfIdUnprefixMethod
   , defaultTcfTextCorpusNamespace
   , defaultTcfIdBase
   , defaultTcfIdPrefixDelimiter
+  , defaultTcfIdPrefixLength
+  , defaultTcfIdUnprefixMethod
   ) where
 
 import Text.XML.HXT.Core
 import qualified Data.ByteString.Char8 as C
 import Data.Maybe
+
+-- * Types
+
+data UnprefixMethod = Delimiter | Length deriving (Show, Eq)
 
 data Config =
   TextRoot QName                        -- ^ qname of parent node for text
@@ -36,9 +47,16 @@ data Config =
   | TcfIdBase Int                       -- ^ The base of the IDs used in a TCf file
   | TcfIdPrefixDelimiter Char           -- ^ The character that
                                         -- delimits the prefix from
-                                        -- the number in a ID used in
-                                        -- a TCF file
+                                        -- the number part in a ID
+                                        -- used in a TCF file
+  | TcfIdPrefixLength Int               -- ^ The length of the prefix
+                                        -- in an ID used in a TCF
+                                        -- file.
+  | TcfIdUnprefixMethod UnprefixMethod  -- ^ Howto unprefix an ID used
+                                        -- in a TCF file.
   deriving (Show, Eq)
+
+-- * Default configuration values.
 
 -- | Default value for the <TextCorpus> element of a TCF file:
 -- http://www.dspin.de/data/textcorpus
@@ -54,6 +72,17 @@ defaultTcfIdBase = 10
 -- numeric part of IDs used in a TCF file: \'_\'.
 defaultTcfIdPrefixDelimiter :: Char
 defaultTcfIdPrefixDelimiter = '_'
+
+-- | Default length of the prefix in an ID used in a TCF file: 1.
+defaultTcfIdPrefixLength :: Int
+defaultTcfIdPrefixLength = 2
+
+-- | Default method how to strip the prefix in an ID used in a TCF
+-- file: 'Length'.
+defaultTcfIdUnprefixMethod :: UnprefixMethod
+defaultTcfIdUnprefixMethod = Length
+
+-- * Getting aspects of the configuration.
 
 -- | Returns the maybe qualified named of the text root defined in the
 -- config. If there where multiple text roots defined in the config
@@ -109,6 +138,40 @@ getTcfIdPrefixDelimiter [] = defaultTcfIdPrefixDelimiter
 getTcfIdPrefixDelimiter ((TcfIdPrefixDelimiter d):_) = d
 getTcfIdPrefixDelimiter (_:xs) = getTcfIdPrefixDelimiter xs
 
+-- | Get the length of the prefix preceding the numeric part in an ID
+-- used in a TCF file. Defaults to 'defaultTcfPrefixLength'.
+getTcfIdPrefixLength :: [Config] -> Int
+getTcfIdPrefixLength [] = defaultTcfIdPrefixLength
+getTcfIdPrefixLength ((TcfIdPrefixLength l):_) = l
+getTcfIdPrefixLength (_:xs) = getTcfIdPrefixLength xs
+
+-- | Get the method howto strip the prefix from an ID used in a TCF
+-- file.
+getTcfIdUnprefixMethod :: [Config] -> UnprefixMethod
+getTcfIdUnprefixMethod [] = defaultTcfIdUnprefixMethod
+getTcfIdUnprefixMethod ((TcfIdUnprefixMethod Length):_) = Length
+getTcfIdUnprefixMethod ((TcfIdUnprefixMethod Delimiter):_) = Delimiter
+getTcfIdUnprefixMethod (_:xs) = getTcfIdUnprefixMethod xs
+
+
+-- * Setters for aspects of the configuration.
+
+-- | Set the base of the IDs used in a TCF file.
+setTcfIdBase :: Int       -- ^ the base
+             -> [Config]  -- ^ the existing config
+             -> [Config]  -- ^ the new configuration is returned
+setTcfIdBase bs cfg = (TcfIdBase bs) : cfg
+
+-- | Set the length of the prefix preceding the numeric part in an ID
+-- used in a Tcf file. This overrides the value parsed from the config
+-- file.
+setTcfIdPrefixLength :: Int       -- ^ the length of the ID prefix
+                     -> [Config]  -- ^ the existing configuration
+                     -> [Config]  -- ^ the new configuration is returned
+setTcfIdPrefixLength l cfg = (TcfIdPrefixLength l) : cfg                     
+
+-- * Parsing the xml config file.
+
 -- | An arrow for parsing the config file. Cf. implementation of
 -- 'runConfigParser' for usage.
 parseConfig :: IOSArrow XmlTree Config
@@ -131,7 +194,10 @@ parseConfig =
   hasName "tcfIdBase" >>> tcfIdBase)
   <+>
   (hasName "tcf" >>> getChildren >>>
-  hasName "tcfIdPrefixDelimiter" >>> tcfIdPrefixDelimiter)
+  hasName "tcfIdPrefix" >>> tcfIdPrefixDelimiter)
+  <+>
+  (hasName "tcf" >>> getChildren >>>
+  hasName "tcfIdPrefix" >>> tcfIdPrefixLength)
 
 textRoot :: IOSArrow XmlTree Config
 textRoot =
@@ -171,6 +237,10 @@ tcfIdPrefixDelimiter =
   getAttrValue "delimiter" >>>
   arr (TcfIdPrefixDelimiter . head . defaultOnNull (defaultTcfIdPrefixDelimiter:[]))
 
+tcfIdPrefixLength :: IOSArrow XmlTree Config
+tcfIdPrefixLength =
+  getAttrValue "length" >>>
+  arr (TcfIdPrefixLength . fromMaybe defaultTcfIdPrefixLength . fmap fst . C.readInt . C.pack)
 
 defaultOnNull :: [a] -> [a] -> [a]
 defaultOnNull deflt [] = deflt
