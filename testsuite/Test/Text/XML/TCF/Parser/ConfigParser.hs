@@ -14,10 +14,11 @@ test_runConfigParser = do
   assertEqual
     [(TextRoot (mkNsName "text" "http://www.tei-c.org/ns/1.0")),
      (DroppedTree (mkNsName "fw" "http://www.tei-c.org/ns/1.0")),
-     (LineBreak (mkQName "tei" "lb" "http://www.tei-c.org/ns/1.0")),
-     (LineBreak (mkQName "t" "l" "http://www.tei-c.org/ns/1.0")),
+     (LineBreak (mkNsName "lb" "http://www.tei-c.org/ns/1.0")),
+     (LineBreak (mkNsName "l" "http://www.tei-c.org/ns/1.0")),
      (Hyphen '-'),
-     (Hyphen '\172')]
+     (Hyphen '\172'),
+     (TcfTextCorpusNamespace "http://www.dspin.de/data/textcorpus")]
     results
 
 test_getters = do
@@ -39,3 +40,15 @@ test_getters = do
   assertEqual
     [(mkNsName "fw" "http://www.tei-c.org/ns/1.0")]
     (getDroppedTrees results)
+
+  assertEqual
+    "http://www.dspin.de/data/textcorpus"
+    (getTcfTextCorpusNamespace results)
+
+  assertEqual
+    10
+    (getTcfIdBase results)
+
+  assertEqual
+    '_'
+    (getTcfIdPrefixDelimiter results)
