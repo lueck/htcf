@@ -69,6 +69,24 @@ tokenize cfg tcf = tokenize' 1 tcf
     hasBreak :: String -> Bool
     hasBreak s = isJust $ find isBreak s
 
+    mkToken :: String -- the token
+            -> Int -- the token ID
+            -> TextPosition -- the position in text layer
+            -> XmlPosition -- the position in source
+            -> Int -- offset in current string (text node)
+            -> Token
+    mkToken tok idd tOffset srcOffset 0 =
+      (Token tok (Just idd)
+         (Just tOffset)
+         (Just $ shiftTextPosition tOffset $ length tok)
+         (Just srcOffset)
+         (Just $ shiftXmlPosition srcOffset $ length tok))
+    mkToken tok idd tOffset srcOffset offset =
+      (Token tok (Just idd)
+         (Just $ shiftTextPosition tOffset offset)
+         (Just $ shiftTextPosition tOffset $ offset + length tok)
+         (Just $ shiftXmlPosition srcOffset offset)
+         (Just $ shiftXmlPosition srcOffset $ offset + length tok))
 
     -- tokenize' does all the work.
     tokenize' :: Int -- ^ token id (number)
@@ -193,11 +211,7 @@ tokenize cfg tcf = tokenize' 1 tcf
       -- abbrev: .\. (FIXME Really? We may have a one-char word before
       -- sentence boundary.)
       | (isLetter t) && (not $ null ts) && (head ts) == '.'
-      = (Token
-         (t:".")
-         (Just i)
-         (Just tOffset) Nothing
-         (Just sOffset) Nothing)
+      = (mkToken (t:".") i tOffset sOffset 0)
         : (tokenize' (i+1)
            ((TcfText
              (tail ts)
@@ -206,11 +220,7 @@ tokenize cfg tcf = tokenize' 1 tcf
             : xs))
       -- abbrev: next word lower case
       | length wds >= 2 && (last $ head wds) == '.' && (isLower $ head $ wds !! 1)
-      = (Token
-         (head wds)
-         (Just i)
-         (Just tOffset) Nothing
-         (Just sOffset) Nothing)
+      = (mkToken (head wds) i tOffset sOffset 0)
         : (tokenize' (i+1)
            ((TcfText
              (drop fstWdLen (t:ts))
@@ -227,43 +237,19 @@ tokenize cfg tcf = tokenize' 1 tcf
             (monthDotP $ wds !! 1)) &&  -- literal month
           -- Leave that? Year may be left.
           (all isDigit $ take thrdWdLen $ wds !! 2)   -- only digits digits before next break
-      = (Token
-         (head wds)
-         (Just i)
-         (Just tOffset)
-         (Just (shiftTextPosition tOffset fstWdLen))
-         (Just sOffset)
-         (Just (shiftXmlPosition sOffset fstWdLen)))
-        :
-        (Token
-         (wds !! 1)
-         (Just (i+1))
-         (Just (shiftTextPosition tOffset sndWdStart))
-         (Just (shiftTextPosition tOffset sndWdStart+sndWdLen))
-         (Just (shiftXmlPosition sOffset sndWdStart))
-         (Just (shiftXmlPosition sOffset sndWdStart+sndWdLen)))
-        :
-        (Token
-         (take thrdWdLen (wds !! 2))
-         (Just (i+2))
-         (Just (shiftTextPosition tOffset thrdWdStart))
-         (Just (shiftTextPosition tOffset (thrdWdStart+thrdWdLen)))
-         (Just (shiftXmlPosition sOffset thrdWdStart))
-         (Just (shiftXmlPosition sOffset thrdWdStart+thrdWdLen)))
+      = (mkToken (head wds) i tOffset sOffset 0)
+        : (mkToken (wds !! 1) (i+1) tOffset sOffset sndWdStart)
+        : (mkToken (take thrdWdLen (wds !! 2)) (i+2) tOffset sOffset thrdWdStart)
         : (tokenize' (i+3)
            ((TcfText
-            (drop (thrdWdStart+thrdWdLen) (t:ts))
-            (shiftTextPosition tOffset sndDotPos+1)
-            (shiftXmlPosition sOffset sndDotPos+1))
-          : xs))
+             (drop (thrdWdStart+thrdWdLen) (t:ts))
+             (shiftTextPosition tOffset sndDotPos+1)
+             (shiftXmlPosition sOffset sndDotPos+1))
+            : xs))
 
       -- Punctuation token
       | isPunctuation t
-      = (Token
-         (t:[])
-         (Just i)
-         (Just tOffset) Nothing
-         (Just sOffset) Nothing)
+      = (mkToken (t:[]) i tOffset sOffset 0)
         : (tokenize' (i+1)
            ((TcfText
              ts
@@ -273,11 +259,7 @@ tokenize cfg tcf = tokenize' 1 tcf
       -- Ordinary word token. Letters here means letters, digits,
       -- marks etc., but neither spaces nor punctuation.
       | otherwise
-      = (Token
-         (t:(take letters ts))
-         (Just i)
-         (Just tOffset) Nothing
-         (Just sOffset) Nothing)
+      = (mkToken (t:(take letters ts)) i tOffset sOffset 0)
         : (tokenize' (i+1)
            ((TcfText
              (drop letters ts)
