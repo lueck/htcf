@@ -9,6 +9,7 @@ import Text.XML.TCF.Parser.ConfigParser
 import Text.XML.TCF.Parser.TcfLayerParser
 import Text.XML.TCF.Parser.TcfElement
 import Text.XML.TCF.Parser.Tokenizer
+import Text.XML.TCF.Arrow.ArrowXml
 
 data Convert =
   Convert { configFile :: Maybe String
@@ -41,7 +42,8 @@ run :: Convert -> IO ()
 run (Convert configFile outputMethod outputStructure fName) = do
   config <- runConfigParser $ fromMaybe "config.xml" configFile
   parsed <- runX (readDocument [withValidate no] fName >>>
-                  propagateNamespaces //>
+                  propagateNamespaces >>>
+                  stripQNames (getDroppedTrees config) //>
                   hasName "text" >>>
                   multi (parserArrow config)
                  )
