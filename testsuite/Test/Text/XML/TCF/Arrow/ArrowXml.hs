@@ -124,3 +124,26 @@ test_stripNames = do
      "This is third paragraph.",
      "This is the fourth paragraph."]
     resultS
+
+test_stripQNames = do
+  results <- runX (readDocument [withValidate no] fileA >>>
+                   propagateNamespaces >>>
+                   stripQNames [(mkNsName "pre" "http://www.w3.org/1999/xhtml"),
+                                (mkNsName "code" "http://www.w3.org/1999/xhtml")] >>>
+                   getChildren >>>
+                   isElem >>> hasName "html" >>>
+                   getChildren >>>
+                   isElem >>> hasName "body" >>>
+                   getChildren >>>
+                   isElem >>>
+                   getChildren >>>
+                   getText)
+  assertEqual
+    ["Test",
+     " is for testing.",
+     "This is first paragraph.",
+     "To run it, enter this at a shell prompt:",
+     "This is third paragraph.",
+     "This is the fourth paragraph."]
+    results
+

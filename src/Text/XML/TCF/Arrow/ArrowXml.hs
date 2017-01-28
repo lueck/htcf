@@ -3,6 +3,7 @@ module Text.XML.TCF.Arrow.ArrowXml
   , qNameIn
   , stripName
   , stripNames
+  , stripQNames
   ) where
 
 import Text.XML.HXT.Core
@@ -27,6 +28,8 @@ stripNames :: (ArrowXml a) => [String] -> a XmlTree XmlTree
 stripNames names = processTopDown $ neg $ (nameIn names) `guards` this
 {-# INLINE stripNames #-}
 
+stripQNames :: (ArrowXml a) => [QName] -> a XmlTree XmlTree
+stripQNames qNames = processTopDown $ neg $ (qNameIn qNames) `guards` this
 
 play :: String -> IO ()
 play fname = do
