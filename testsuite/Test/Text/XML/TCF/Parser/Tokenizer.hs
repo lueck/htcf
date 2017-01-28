@@ -98,6 +98,13 @@ test_hyphenCase2WithWhiteSpaceContinued = do
               (TcfText "o Welt" 4 7)]
 -}
 
+test_numDateOnly = do
+  assertEqual
+    ["31.", "10.", "1517"]
+    (map getToken (tokenize [] parsed))
+  where
+    parsed = [(TcfText "31. 10. 1517" 1 1)]  
+
 test_numDate = do
   assertEqual
     ["31.", "10.", "1517", "is", "a", "date", "."]
@@ -118,5 +125,30 @@ test_numDateContinued = do
     (map getToken (tokenize [] parsed))
   where
     parsed = [(TcfText "31." 1 1),
-              (TcfText "10. 1517 is a date." 4 7)]  
+              (TcfText " 10. 1517 is a date." 4 7)]  
+  
+test_numDateLineBreak = do
+  assertEqual
+    ["31.", "10.", "1517", "is", "a", "date", "."]
+    (map getToken (tokenize [] parsed))
+  where
+    parsed = [(TcfText "31." 1 1),
+              (TcfLineBreak),
+              (TcfText "\n10. 1517 is a date." 4 7)]  
+  
+test_numLitMonthDate = do
+  assertEqual
+    ["31.", "Okt.", "1517", "is", "a", "date", "."]
+    (map getToken (tokenize [] parsed))
+  where
+    parsed = [(TcfText "31. Okt. 1517 is a date." 1 1)]  
+
+test_numLitMonthDateLineBreak = do
+  assertEqual
+    ["31.", "Oktob.", "1517", "is", "a", "date", "."]
+    (map getToken (tokenize [] parsed))
+  where
+    parsed = [(TcfText "31." 1 1),
+              (TcfLineBreak),
+              (TcfText "\nOktob. 1517 is a date." 4 7)]  
   

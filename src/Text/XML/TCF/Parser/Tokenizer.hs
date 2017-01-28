@@ -38,6 +38,7 @@ monthDotP s
   | otherwise = s `elem` months
   where
     sWithoutDot = init s
+    -- FIXME: get this from config
     months = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "Oktober", "September", "November", "Dezember"]
 
 
@@ -94,7 +95,7 @@ tokenize cfg tcf = tokenize' 1 tcf
       = tokenize' i ((TcfText
                       (t1 ++ take (spaces+fstWord) (t2:t2s))
                       tOffset1
-                      {- sOffset1 FIXME -} 1000)
+                      sOffset1)
                      :
                      (TcfText
                       (drop (spaces+fstWord) (t2:t2s))
@@ -208,7 +209,7 @@ tokenize cfg tcf = tokenize' 1 tcf
           ( wd0Len == 2 || wd0Len == 3 ) &&
           (((numberDotP $ wds !! 1) && ( wd1Len == 2 || wd1Len == 3 )) || -- numeric month
             (monthDotP $ wds !! 1)) &&  -- literal month
-        -- Leave that? Year may be left.
+          -- Leave that? Year may be left.
           ((all isDigit $ wds !! 2) ||   -- only digits digits with
             -- punctuation. FIXME: there may be more punctuation
             -- marks, eg. quatations and a comma.
