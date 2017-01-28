@@ -208,12 +208,12 @@ tokenize cfg tcf = tokenize' 1 tcf
           (numberDotP $ head wds) &&
           ( wd0Len == 2 || wd0Len == 3 ) &&
           (((numberDotP $ wds !! 1) && ( wd1Len == 2 || wd1Len == 3 )) || -- numeric month
-            (monthDotP $ wds !! 1)) &&  -- literal month
+            (monthDotP $ wds !! 1)) {-&&  -- literal month
           -- Leave that? Year may be left.
           ((all isDigit $ wds !! 2) ||   -- only digits digits with
             -- punctuation. FIXME: there may be more punctuation
             -- marks, eg. quatations and a comma.
-           ((all isDigit $ init $ wds !! 2) && (isPunctuation $ last $ wds !! 2)))
+           ((all isDigit $ init $ wds !! 2) && (isPunctuation $ last $ wds !! 2))) -}
       = (Token
          (head wds)
          (Just i)
