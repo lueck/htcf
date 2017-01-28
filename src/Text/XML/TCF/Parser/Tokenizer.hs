@@ -1,6 +1,7 @@
 module Text.XML.TCF.Parser.Tokenizer
   ( Token (..)
   , tokenize
+  , getToken
   ) where
 
 import Data.Char
@@ -19,7 +20,26 @@ data Token =
   , end :: Maybe TextPosition
   , srcStart :: Maybe XmlPosition
   , srcEnd :: Maybe XmlPosition
-  } deriving Show
+  } deriving (Show, Eq)
+
+getToken :: Token -> String
+getToken (Token t _ _ _ _ _) = t
+
+numberDotP :: String -> Bool
+numberDotP [] = False
+numberDotP ('.':[]) = True
+numberDotP (_:[]) = False
+numberDotP (x:xs) = (isDigit x) && numberDotP xs
+
+monthDotP :: String -> Bool
+monthDotP [] = False
+monthDotP s
+  | last s == '.' = foldl (\acc m -> acc || (isSubsequenceOf sWithoutDot m)) False months
+  | otherwise = s `elem` months
+  where
+    sWithoutDot = init s
+    months = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "Oktober", "September", "November", "Dezember"]
+
 
 -- | @tokenize@ is the tokenizer function. It takes a configuration
 -- (cf. 'Config') as first parameter and a list of 'TcfElement's as
@@ -66,12 +86,33 @@ tokenize cfg tcf = tokenize' 1 tcf
                      (TcfText
                       (drop letters (t2:t2s))
                       (shiftTextPosition tOffset2 letters)
-                      (shiftTextPosition sOffset2 letters))
+                      (shiftXmlPosition sOffset2 letters))
+                     : xs)
+      -- More context needed for abbrev
+      -- wrapping in words is for continuing over white space only nodes 
+      | (not $ null t1) && (last t1) == '.'
+      = tokenize' i ((TcfText
+                      (t1 ++ take (spaces+fstWord) (t2:t2s))
+                      tOffset1
+                      {- sOffset1 FIXME -} 1000)
+                     :
+                     (TcfText
+                      (drop (spaces+fstWord) (t2:t2s))
+                      (shiftTextPosition tOffset2 (spaces+fstWord))
+                      (shiftXmlPosition sOffset2 (spaces+fstWord)))
                      : xs)
       where
         letters = length $ takeWhile (not . isBreak) (t2:t2s)
-
+        spaces = length $ takeWhile (isSpace) (t2:t2s)
+        fstWord = length $ takeWhile (not . isSpace) $ drop spaces (t2:t2s)
+        
     -- Hyphenation At Linebreak:
+
+    -- Drop linebreaks that were not preceded by a hyphen
+    tokenize' i ((TcfLineBreak):xs) = tokenize' i xs
+    tokenize' i ((TcfText t tOffset sOffset):TcfLineBreak:xs)
+      | (not $ null t) && (not $ ((last t) `elem` (getHyphens cfg)))
+      = tokenize' i ((TcfText t tOffset sOffset):xs)
     
     -- Hyphenation Case 1: Lines are enclosed in line-elements,
     -- e.g. <TEI:l>, and these lines are pretty printed each in one
@@ -119,9 +160,6 @@ tokenize cfg tcf = tokenize' 1 tcf
         spaces = length $ takeWhile isSpace t2
         letters = length $ takeWhile (not . isBreak) (drop spaces t2)
 
-    -- Drop linebreaks that were not preceded by a hyphen
-    tokenize' i ((TcfLineBreak):xs) = tokenize' i xs
-
     -- Drop zero length text node.
     tokenize' i ((TcfText "" _ _):xs)
       = tokenize' i xs
@@ -137,6 +175,62 @@ tokenize cfg tcf = tokenize' 1 tcf
                       (shiftTextPosition tOffset spaces+1)
                       (shiftXmlPosition sOffset spaces+1))
                      : xs)
+      -- abbrev: .\. (FIXME Really? We may have a one-char word before
+      -- sentence boundary.)
+      | (isLetter t) && (not $ null ts) && (head ts) == '.'
+      = (Token
+         (t:".")
+         (Just i)
+         (Just tOffset) Nothing
+         (Just sOffset) Nothing)
+        : (tokenize' (i+1)
+           ((TcfText
+             (tail ts)
+             (shiftTextPosition tOffset 2)
+             (shiftXmlPosition sOffset 2))
+            : xs))
+      -- abbrev: next word lower case
+      | length wds >= 2 && (last $ head wds) == '.' && (isLower $ head $ wds !! 1)
+      = (Token
+         (head wds)
+         (Just i)
+         (Just tOffset) Nothing
+         (Just sOffset) Nothing)
+        : (tokenize' (i+1)
+           ((TcfText
+             (drop wd0Len (t:ts))
+             (shiftTextPosition tOffset wd0Len)
+             (shiftXmlPosition sOffset wd0Len))
+            : xs))
+        -- date numbers: day and month, after year -> sentence boundary
+      | length wds >= 3 &&
+          (numberDotP $ head wds) &&
+          ( wd0Len == 2 || wd0Len == 3 ) &&
+          (((numberDotP $ wds !! 1) && ( wd1Len == 2 || wd1Len == 3 )) || -- numeric month
+            (monthDotP $ wds !! 1)) &&  -- literal month
+        -- Leave that? Year may be left.
+          ((all isDigit $ wds !! 2) ||   -- only digits digits with
+            -- punctuation. FIXME: there may be more punctuation
+            -- marks, eg. quatations and a comma.
+           ((all isDigit $ init $ wds !! 2) && (isPunctuation $ last $ wds !! 2)))
+      = (Token
+         (head wds)
+         (Just i)
+         (Just tOffset) Nothing
+         (Just sOffset) Nothing)
+        :
+        (Token
+         (wds !! 1)
+         (Just (i+1))
+         (Just (shiftTextPosition tOffset (sndDotPos-wd1Len+1))) Nothing
+         (Just (shiftXmlPosition sOffset (sndDotPos-wd1Len+1))) Nothing)
+        : (tokenize' (i+2)
+           ((TcfText
+            (drop (sndDotPos+1) (t:ts))
+            (shiftTextPosition tOffset sndDotPos+1)
+            (shiftXmlPosition sOffset sndDotPos+1))
+          : xs))
+
       -- Punctuation token
       | isPunctuation t
       = (Token
@@ -150,8 +244,8 @@ tokenize cfg tcf = tokenize' 1 tcf
              (shiftTextPosition tOffset 1)
              (shiftXmlPosition sOffset 1))
             : xs))
-      -- Word token. Letters here means letters, digits, marks etc., but
-      -- neither spaces nor punctuation.
+      -- Ordinary word token. Letters here means letters, digits,
+      -- marks etc., but neither spaces nor punctuation.
       | otherwise
       = (Token
          (t:(take letters ts))
@@ -167,3 +261,7 @@ tokenize cfg tcf = tokenize' 1 tcf
       where
         spaces = length $ takeWhile isSpace ts
         letters = length $ takeWhile (not . isBreak) ts
+        wds = words (t:ts)
+        wd0Len = length $ head wds
+        wd1Len = length (wds !! 1)
+        sndDotPos = (elemIndices '.' (t:ts)) !! 1
