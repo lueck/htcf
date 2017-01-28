@@ -2,6 +2,8 @@ module Text.XML.TCF.Parser.Tokenizer
   ( Token (..)
   , tokenize
   , getToken
+  , nthWordStart
+  , dropNWords
   ) where
 
 import Data.Char
@@ -41,6 +43,17 @@ monthDotP s
     -- FIXME: get this from config
     months = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "Oktober", "September", "November", "Dezember"]
 
+dropNWords :: (Char -> Bool) -> Int -> String -> String
+dropNWords _ 0 s = s
+dropNWords p n s = dropNWords p (n-1) $ dropWhile (not . p) $ dropWhile p s
+
+nthWordStart :: (Char -> Bool) -> Int -> String -> Int
+nthWordStart spacesP 0 s = length $ takeWhile spacesP s
+nthWordStart spacesP n s = spacesPlusLetters + (nthWordStart spacesP (n-1) $ drop spacesPlusLetters s)
+  where
+    spaces = length $ takeWhile spacesP s
+    letters = length $ takeWhile (not . spacesP) $ drop spaces s
+    spacesPlusLetters = spaces+letters
 
 -- | @tokenize@ is the tokenizer function. It takes a configuration
 -- (cf. 'Config') as first parameter and a list of 'TcfElement's as
@@ -55,6 +68,7 @@ tokenize cfg tcf = tokenize' 1 tcf
       | otherwise = isSpace c || isPunctuation c -- spaces and punctuation do
     hasBreak :: String -> Bool
     hasBreak s = isJust $ find isBreak s
+
 
     -- tokenize' does all the work.
     tokenize' :: Int -- ^ token id (number)
@@ -199,35 +213,46 @@ tokenize cfg tcf = tokenize' 1 tcf
          (Just sOffset) Nothing)
         : (tokenize' (i+1)
            ((TcfText
-             (drop wd0Len (t:ts))
-             (shiftTextPosition tOffset wd0Len)
-             (shiftXmlPosition sOffset wd0Len))
+             (drop fstWdLen (t:ts))
+             (shiftTextPosition tOffset fstWdLen)
+             (shiftXmlPosition sOffset fstWdLen))
             : xs))
-        -- date numbers: day and month, after year -> sentence boundary
+      -- Date (i): day. month. year[. -> sentence boundary]. We
+      -- generate 3 Tokens to get the sentence boundary right, which
+      -- is left for the next call of tokenize'.
       | length wds >= 3 &&
           (numberDotP $ head wds) &&
-          ( wd0Len == 2 || wd0Len == 3 ) &&
-          (((numberDotP $ wds !! 1) && ( wd1Len == 2 || wd1Len == 3 )) || -- numeric month
-            (monthDotP $ wds !! 1)) {-&&  -- literal month
+          ( fstWdLen == 2 || fstWdLen == 3 ) &&
+          (((numberDotP $ wds !! 1) && ( sndWdLen == 2 || sndWdLen == 3 )) || -- numeric month
+            (monthDotP $ wds !! 1)) &&  -- literal month
           -- Leave that? Year may be left.
-          ((all isDigit $ wds !! 2) ||   -- only digits digits with
-            -- punctuation. FIXME: there may be more punctuation
-            -- marks, eg. quatations and a comma.
-           ((all isDigit $ init $ wds !! 2) && (isPunctuation $ last $ wds !! 2))) -}
+          (all isDigit $ take thrdWdLen $ wds !! 2)   -- only digits digits before next break
       = (Token
          (head wds)
          (Just i)
-         (Just tOffset) Nothing
-         (Just sOffset) Nothing)
+         (Just tOffset)
+         (Just (shiftTextPosition tOffset fstWdLen))
+         (Just sOffset)
+         (Just (shiftXmlPosition sOffset fstWdLen)))
         :
         (Token
          (wds !! 1)
          (Just (i+1))
-         (Just (shiftTextPosition tOffset (sndDotPos-wd1Len+1))) Nothing
-         (Just (shiftXmlPosition sOffset (sndDotPos-wd1Len+1))) Nothing)
-        : (tokenize' (i+2)
+         (Just (shiftTextPosition tOffset sndWdStart))
+         (Just (shiftTextPosition tOffset sndWdStart+sndWdLen))
+         (Just (shiftXmlPosition sOffset sndWdStart))
+         (Just (shiftXmlPosition sOffset sndWdStart+sndWdLen)))
+        :
+        (Token
+         (take thrdWdLen (wds !! 2))
+         (Just (i+2))
+         (Just (shiftTextPosition tOffset thrdWdStart))
+         (Just (shiftTextPosition tOffset (thrdWdStart+thrdWdLen)))
+         (Just (shiftXmlPosition sOffset thrdWdStart))
+         (Just (shiftXmlPosition sOffset thrdWdStart+thrdWdLen)))
+        : (tokenize' (i+3)
            ((TcfText
-            (drop (sndDotPos+1) (t:ts))
+            (drop (thrdWdStart+thrdWdLen) (t:ts))
             (shiftTextPosition tOffset sndDotPos+1)
             (shiftXmlPosition sOffset sndDotPos+1))
           : xs))
@@ -262,7 +287,10 @@ tokenize cfg tcf = tokenize' 1 tcf
       where
         spaces = length $ takeWhile isSpace ts
         letters = length $ takeWhile (not . isBreak) ts
-        wds = words (t:ts)
-        wd0Len = length $ head wds
-        wd1Len = length (wds !! 1)
+        wds = words (t:ts) -- list of words, but punctuation is constituent of word
+        fstWdLen = length $ head wds
+        sndWdLen = length (wds !! 1)
+        thrdWdLen = length $ takeWhile (not . isBreak) (wds !! 2) -- no dot
+        sndWdStart = nthWordStart isBreak 1 (t:ts)
+        thrdWdStart = nthWordStart isBreak 2 (t:ts)
         sndDotPos = (elemIndices '.' (t:ts)) !! 1
