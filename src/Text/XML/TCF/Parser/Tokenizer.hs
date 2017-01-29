@@ -75,18 +75,29 @@ tokenize cfg tcf = tokenize' 1 tcf
             -> XmlPosition -- the position in source
             -> Int -- offset in current string (text node)
             -> Token
-    mkToken tok idd tOffset srcOffset 0 =
+    mkToken tok idd tOffset xOffset 0 =
       (Token tok (Just idd)
          (Just tOffset)
          (Just $ shiftTextPosition tOffset $ length tok)
-         (Just srcOffset)
-         (Just $ shiftXmlPosition srcOffset $ length tok))
-    mkToken tok idd tOffset srcOffset offset =
+         (Just xOffset)
+         (Just $ shiftXmlPosition xOffset $ length tok))
+    mkToken tok idd tOffset xOffset offset =
       (Token tok (Just idd)
          (Just $ shiftTextPosition tOffset offset)
          (Just $ shiftTextPosition tOffset $ offset + length tok)
-         (Just $ shiftXmlPosition srcOffset offset)
-         (Just $ shiftXmlPosition srcOffset $ offset + length tok))
+         (Just $ shiftXmlPosition xOffset offset)
+         (Just $ shiftXmlPosition xOffset $ offset + length tok))
+
+    mkText :: String         -- the old text
+           -> Int            -- number of chars to drop from the old text (text node)
+           -> TextPosition   -- old position in text layer
+           -> XmlPosition    -- old position in xml source
+           -> TcfElement
+    mkText txt n tOffset xOffset =
+      (TcfText
+       (drop n txt)
+       (shiftTextPosition tOffset n+1)
+       (shiftXmlPosition xOffset n+1))
 
     -- tokenize' does all the work.
     tokenize' :: Int -- ^ token id (number)
@@ -203,30 +214,16 @@ tokenize cfg tcf = tokenize' 1 tcf
     tokenize' i ((TcfText (t:ts) tOffset sOffset):xs)
       -- Drop heading space
       | isSpace t
-      = tokenize' i ((TcfText
-                      (drop spaces ts)
-                      (shiftTextPosition tOffset spaces+1)
-                      (shiftXmlPosition sOffset spaces+1))
-                     : xs)
+      = tokenize' i ((mkText (t:ts) spaces tOffset sOffset) : xs)
       -- abbrev: .\. (FIXME Really? We may have a one-char word before
       -- sentence boundary.)
       | (isLetter t) && (not $ null ts) && (head ts) == '.'
       = (mkToken (t:".") i tOffset sOffset 0)
-        : (tokenize' (i+1)
-           ((TcfText
-             (tail ts)
-             (shiftTextPosition tOffset 2)
-             (shiftXmlPosition sOffset 2))
-            : xs))
+        : (tokenize' (i+1) ((mkText (t:ts) 2 tOffset sOffset) : xs))
       -- abbrev: next word lower case
       | length wds >= 2 && (last $ head wds) == '.' && (isLower $ head $ wds !! 1)
       = (mkToken (head wds) i tOffset sOffset 0)
-        : (tokenize' (i+1)
-           ((TcfText
-             (drop fstWdLen (t:ts))
-             (shiftTextPosition tOffset fstWdLen)
-             (shiftXmlPosition sOffset fstWdLen))
-            : xs))
+        : (tokenize' (i+1) ((mkText (t:ts) fstWdLen tOffset sOffset) : xs))
       -- Date (i): day. month. year[. -> sentence boundary]. We
       -- generate 3 Tokens to get the sentence boundary right, which
       -- is left for the next call of tokenize'.
@@ -240,35 +237,20 @@ tokenize cfg tcf = tokenize' 1 tcf
       = (mkToken (head wds) i tOffset sOffset 0)
         : (mkToken (wds !! 1) (i+1) tOffset sOffset sndWdStart)
         : (mkToken (take thrdWdLen (wds !! 2)) (i+2) tOffset sOffset thrdWdStart)
-        : (tokenize' (i+3)
-           ((TcfText
-             (drop (thrdWdStart+thrdWdLen) (t:ts))
-             (shiftTextPosition tOffset sndDotPos+1)
-             (shiftXmlPosition sOffset sndDotPos+1))
-            : xs))
+        : (tokenize' (i+3) ((mkText (t:ts) (thrdWdStart+thrdWdLen) tOffset sOffset) : xs))
 
       -- Punctuation token
       | isPunctuation t
       = (mkToken (t:[]) i tOffset sOffset 0)
-        : (tokenize' (i+1)
-           ((TcfText
-             ts
-             (shiftTextPosition tOffset 1)
-             (shiftXmlPosition sOffset 1))
-            : xs))
+        : (tokenize' (i+1) ((mkText (t:ts) 1 tOffset sOffset) : xs))
       -- Ordinary word token. Letters here means letters, digits,
       -- marks etc., but neither spaces nor punctuation.
       | otherwise
-      = (mkToken (t:(take letters ts)) i tOffset sOffset 0)
-        : (tokenize' (i+1)
-           ((TcfText
-             (drop letters ts)
-             (shiftTextPosition tOffset letters+1)
-             (shiftXmlPosition sOffset letters+1))
-            : xs))
+      = (mkToken (take letters (t:ts)) i tOffset sOffset 0)
+        : (tokenize' (i+1) ((mkText (t:ts) letters tOffset sOffset) : xs ))
       where
-        spaces = length $ takeWhile isSpace ts
-        letters = length $ takeWhile (not . isBreak) ts
+        spaces = length $ takeWhile isSpace (t:ts)
+        letters = length $ takeWhile (not . isBreak) (t:ts)
         wds = words (t:ts) -- list of words, but punctuation is constituent of word
         fstWdLen = length $ head wds
         sndWdLen = length (wds !! 1)
