@@ -1,6 +1,5 @@
 module HTCF.WriteTcf
-  ( writeTokens
-  , writeToken
+  ( writeTokenLayer
   ) where
 
 import Text.XML.HXT.Core
@@ -10,19 +9,18 @@ import HTCF.Layers
 
 import Text.XML.TCF.Parser.ConfigParser
 
-writeTokens :: (ArrowXml a) => [Config] -> [Layer] -> a XmlTree XmlTree
-writeTokens cfg ts =
+writeTokenLayer :: (ArrowXml a) => [Config] -> [Layer] -> a XmlTree XmlTree
+writeTokenLayer cfg ts =
   (mkqelem
-   (mkNsName "tokens" $ getTcfTextCorpusNamespace cfg) -- qname
+   (mkNsName "tokens" ns) -- qname
    [] -- attribute nodes
-   (map (writeToken cfg) ts))
-
-writeToken :: (ArrowXml a) => [Config] -> Layer -> a XmlTree XmlTree
-writeToken cfg (Token t idd start end sStart sEnd) =
-  (mkqelem
-   (mkNsName "token" ns)
-   ((maybeAttr "id" idd) ++ (maybeAttr "start" start) ++ (maybeAttr "end" end) ++ (maybeAttr "srcStart" sStart) ++ (maybeAttr "srcEnd" sEnd))
-   [(txt t)])
+   (map writeToken ts))
   where
     ns = getTcfTextCorpusNamespace cfg
     maybeAttr n val = maybeToList $ fmap ((sattr n) . show) val
+    writeToken :: (ArrowXml a) => Layer -> a XmlTree XmlTree
+    writeToken (Token t idd start end sStart sEnd) =
+      (mkqelem
+       (mkNsName "token" ns)
+       ((maybeAttr "id" idd) ++ (maybeAttr "start" start) ++ (maybeAttr "end" end) ++ (maybeAttr "srcStart" sStart) ++ (maybeAttr "srcEnd" sEnd))
+       [(txt t)])
