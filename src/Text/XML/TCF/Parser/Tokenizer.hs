@@ -27,6 +27,11 @@ data Token =
 getToken :: Token -> String
 getToken (Token t _ _ _ _ _) = t
 
+-- FIXME: get this from config
+getMonths :: [Config] -> [String]
+getMonths _ = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "Oktober", "September", "November", "Dezember"]
+
+
 isNumDay :: String -> Bool
 isNumDay (d:'.':[]) = isDigit d
 isNumDay ('0':d:'.':[]) = isDigit d
@@ -41,15 +46,19 @@ isNumMonth ('0':d:'.':[]) = isDigit d
 isNumMonth ('1':d:'.':[]) = d == '0' || d == '1' || d == '2'
 isNumMonth _ = False
 
-isLitMonth :: String -> Bool
-isLitMonth [] = False
-isLitMonth s
-  | last s == '.' = foldl (\acc m -> acc || (isSubsequenceOf sWithoutDot m)) False months
-  | otherwise = s `elem` months
+-- | Returns true, if the string parameter is a real subsequence of a
+-- month ending with a dot. Real subsequence means, that it is shorter
+-- than the matching month.
+isLitMonthAbbrev :: [Config] -> String -> Bool
+isLitMonthAbbrev _ [] = False
+isLitMonthAbbrev cfg s
+  -- | last s == '.' = foldl (\acc m -> acc || (isSubsequenceOf sWithoutDot m)) False months
+  | (last s == '.') && (not $ null month) = length s <= (length $ head month)
+  | otherwise = False
   where
     sWithoutDot = init s
-    -- FIXME: get this from config
-    months = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "Oktober", "September", "November", "Dezember"]
+    month = filter (isSubsequenceOf sWithoutDot) months
+    months = getMonths cfg
 
 dropNWords :: (Char -> Bool) -> Int -> String -> String
 dropNWords _ 0 s = s
@@ -242,20 +251,28 @@ tokenize cfg tcf = tokenize' 1 tcf
       | length wds >= 3 &&
           (isNumDay $ head wds) &&       -- numeric day
           ((isNumMonth $ wds !! 1) ||    -- numeric month
-           (isLitMonth $ wds !! 1)) &&   -- literal month
-          (all isDigit $ take thrdWdLen $ wds !! 2)   -- numeric year
+           (isLitMonthAbbrev cfg $ wds !! 1)) &&   -- literal month
+          (all isDigit $ take thrdWdLen' $ wds !! 2)   -- numeric year
       = (mkToken (head wds) i tOffset sOffset 0)
         : (mkToken (wds !! 1) (i+1) tOffset sOffset sndWdStart)
-        : (mkToken (take thrdWdLen (wds !! 2)) (i+2) tOffset sOffset thrdWdStart)
-        : (tokenize' (i+3) ((mkText (t:ts) (thrdWdStart+thrdWdLen) tOffset sOffset) : xs))
+        : (mkToken (take thrdWdLen' (wds !! 2)) (i+2) tOffset sOffset thrdWdStart)
+        : (tokenize' (i+3) ((mkText (t:ts) (thrdWdStart+thrdWdLen') tOffset sOffset) : xs))
       -- Date (ii): day. month. We generate 2 tokens. FIXME: german date format.
       | length wds >= 2 &&
           (isNumDay $ head wds) &&      -- numeric day
           ((isNumMonth $ wds !! 1) ||   -- numeric month
-           (isLitMonth $ wds !! 1))     -- literal month
+           (isLitMonthAbbrev cfg $ wds !! 1))     -- literal month
       = (mkToken (head wds) i tOffset sOffset 0)
         : (mkToken (wds !! 1) (i+1) tOffset sOffset sndWdStart)
         : (tokenize' (i+3) ((mkText (t:ts) (sndWdStart+sndWdLen) tOffset sOffset) : xs))
+      -- Date (iii): day. literal month not abbreviated. We generate 2
+      -- tokens. FIXME: german date format.
+      | length wds >= 2 &&
+          (isNumDay $ head wds) &&      -- numeric day
+          ((take sndWdLen' $ wds !! 1) `elem` (getMonths cfg))     -- literal month
+      = (mkToken (head wds) i tOffset sOffset 0)
+        : (mkToken (take sndWdLen' (wds !! 1)) (i+1) tOffset sOffset sndWdStart)
+        : (tokenize' (i+3) ((mkText (t:ts) (sndWdStart+sndWdLen') tOffset sOffset) : xs))
 
       -- Punctuation token
       | isPunctuation t
@@ -272,6 +289,7 @@ tokenize cfg tcf = tokenize' 1 tcf
         wds = words (t:ts) -- list of words, but punctuation is constituent of word
         fstWdLen = length $ head wds
         sndWdLen = length (wds !! 1)
-        thrdWdLen = length $ takeWhile (not . isBreak) (wds !! 2) -- no dot
+        sndWdLen' = length $ takeWhile (not . isBreak) (wds !! 1) -- no dot
+        thrdWdLen' = length $ takeWhile (not . isBreak) (wds !! 2) -- no dot
         sndWdStart = nthWordStart isBreak 1 (t:ts)
         thrdWdStart = nthWordStart isBreak 2 (t:ts)
