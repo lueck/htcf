@@ -11,57 +11,80 @@ configFile = "testsuite/Test/Text/XML/TCF/Parser/config.xml"
 
 test_runConfigParser = do
   results <- runConfigParser configFile
-  assertEqual
-    [(TextRoot (mkNsName "text" "http://www.tei-c.org/ns/1.0")),
-     (DroppedTree (mkNsName "fw" "http://www.tei-c.org/ns/1.0")),
-     (LineBreak (mkNsName "lb" "http://www.tei-c.org/ns/1.0")),
-     (LineBreak (mkNsName "l" "http://www.tei-c.org/ns/1.0")),
-     (Hyphen '-'),
-     (Hyphen '\172'),
-     (TcfTextCorpusNamespace "http://www.dspin.de/data/textcorpus")]
+  assertElem
+    (TextRoot (mkNsName "text" "http://www.tei-c.org/ns/1.0"))
     results
 
-test_getters = do
+test_getTextRoot = do
   results <- runConfigParser configFile
-  
   assertEqual
     (Just $ mkNsName "text" "http://www.tei-c.org/ns/1.0")
     (getTextRoot results)
 
+test_getHyphens = do
+  results <- runConfigParser configFile
   assertEqual
     "-¬"
     (getHyphens results)
 
+test_getLinebreaks = do
+  results <- runConfigParser configFile
   assertEqual
     [(mkQName "prefix" "lb" "http://www.tei-c.org/ns/1.0")
     ,(mkQName "TEI" "l" "http://www.tei-c.org/ns/1.0")]
     (getLineBreaks results)
 
-  assertEqual
-    [(mkNsName "fw" "http://www.tei-c.org/ns/1.0")]
+test_getDroppedTrees = do
+  results <- runConfigParser configFile
+  assertElem
+    (mkNsName "fw" "http://www.tei-c.org/ns/1.0")
     (getDroppedTrees results)
 
+test_getTcfTextCorpusNamespace = do
+  results <- runConfigParser configFile
   assertEqual
     "http://www.dspin.de/data/textcorpus"
     (getTcfTextCorpusNamespace results)
 
+test_getTcfIdBase = do
+  results <- runConfigParser configFile
   assertEqual
     10
     (getTcfIdBase results)
 
+test_getTcfIdPrefixDelimiter = do
+  results <- runConfigParser configFile
   assertEqual
     '_'
     (getTcfIdPrefixDelimiter results)
 
+test_getTcfIdPrefixLength = do
+  results <- runConfigParser configFile
   assertEqual
     2
     (getTcfIdPrefixLength results)
 
+test_getTcfIdUnprefixMethod = do
+  results <- runConfigParser configFile
   assertEqual
     Length
     (getTcfIdUnprefixMethod results)
 
-test_Setters = do
+test_getAbbrev1CharToken = do
+  results <- runConfigParser configFile
+  assertBool
+    (abbrev1CharTokenP results)
+
+test_getMonths = do
+  results <- runConfigParser configFile
+  assertElem
+    "Jänner"
+    (getMonths results)
+
+
+-- * Tests for setters:
+
+test_setTcfIdPrefixLength = do
   let config = setTcfIdPrefixLength 10 []
 
   assertEqual

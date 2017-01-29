@@ -6,7 +6,6 @@ module Text.XML.TCF.Parser.ConfigParser
   ( Config (..)
   , UnprefixMethod (..)
   , runConfigParser
-  , parseConfig
   , getTextRoot
   , getHyphens
   , getLineBreaks
@@ -27,6 +26,17 @@ module Text.XML.TCF.Parser.ConfigParser
   , defaultTcfIdPrefixDelimiter
   , defaultTcfIdPrefixLength
   , defaultTcfIdUnprefixMethod
+  , parseConfig
+  , pcTextRoot
+  , pcDroppedTreeSimple
+  , pcLinebreak
+  , pcHyphen
+  , pcAbbrev1CharToken
+  , pcMonth
+  , pcTcfTextCorpusNamespace
+  , pcTcfIdBase
+  , pcTcfIdPrefixDelimiter
+  , pcTcfIdPrefixLength
   ) where
 
 import Text.XML.HXT.Core
@@ -219,81 +229,6 @@ addAbbreviations abbrevs cfg = cfg ++ (map (Abbreviation) abbrevs)
 
 -- * Parsing the xml config file.
 
--- | An arrow for parsing the config file. Cf. implementation of
--- 'runConfigParser' for usage.
-parseConfig :: IOSArrow XmlTree Config
-parseConfig =
-  (hasName "textRoot" >>> textRoot)
-  <+>
-  (hasName "droppedTree" >>> getChildren >>>
-  hasName "simpleElement" >>> droppedTreeSimple)
-  <+>
-  (hasName "tokenizerControl" >>> getChildren >>>
-  hasName "linebreak" >>> linebreak)
-  <+>
-  (hasName "specialCharacter" >>> getChildren >>>
-  hasName "hyphen" >>> hyphen)
-  <+>
-  (hasName "tcf" >>> getChildren >>>
-  hasName "tcfNamespace" >>> tcfTextCorpusNamespace)
-  <+>
-  (hasName "tcf" >>> getChildren >>>
-  hasName "tcfIdBase" >>> tcfIdBase)
-  <+>
-  (hasName "tcf" >>> getChildren >>>
-  hasName "tcfIdPrefix" >>> tcfIdPrefixDelimiter)
-  <+>
-  (hasName "tcf" >>> getChildren >>>
-  hasName "tcfIdPrefix" >>> tcfIdPrefixLength)
-
-textRoot :: IOSArrow XmlTree Config
-textRoot =
-  getAttrValue0 "name" &&&
-  getAttrValue0 "namespace" >>>
-  arr (TextRoot . (uncurry mkNsName))
-
-droppedTreeSimple :: IOSArrow XmlTree Config
-droppedTreeSimple =
-  getAttrValue0 "name" &&&
-  getAttrValue0 "namespace" >>>
-  arr (DroppedTree . (uncurry mkNsName))
-
-linebreak :: IOSArrow XmlTree Config
-linebreak =
-  getAttrValue0 "name" &&&
-  getAttrValue0 "namespace" >>>
-  arr (LineBreak . (uncurry mkNsName))
-
-hyphen :: IOSArrow XmlTree Config
-hyphen =
-  getAttrValue0 "char" >>>
-  arr (Hyphen . head)
-
-tcfTextCorpusNamespace :: IOSArrow XmlTree Config
-tcfTextCorpusNamespace =
-  getAttrValue "namespace" >>>
-  arr (TcfTextCorpusNamespace . defaultOnNull defaultTcfTextCorpusNamespace)
-
-tcfIdBase :: IOSArrow XmlTree Config
-tcfIdBase =
-  getAttrValue "base" >>>
-  arr (TcfIdBase . fromMaybe defaultTcfIdBase . fmap fst . C.readInt . C.pack) 
-
-tcfIdPrefixDelimiter :: IOSArrow XmlTree Config
-tcfIdPrefixDelimiter =
-  getAttrValue "delimiter" >>>
-  arr (TcfIdPrefixDelimiter . head . defaultOnNull (defaultTcfIdPrefixDelimiter:[]))
-
-tcfIdPrefixLength :: IOSArrow XmlTree Config
-tcfIdPrefixLength =
-  getAttrValue "length" >>>
-  arr (TcfIdPrefixLength . fromMaybe defaultTcfIdPrefixLength . fmap fst . C.readInt . C.pack)
-
-defaultOnNull :: [a] -> [a] -> [a]
-defaultOnNull deflt [] = deflt
-defaultOnNull _ (x:xs) = x:xs
-
-
 -- | Returns the config defined in a XML config file.
 runConfigParser :: FilePath -> IO [Config]
 runConfigParser fname = do
@@ -303,3 +238,95 @@ runConfigParser fname = do
                    multi parseConfig)
   return results
 
+-- | An arrow for parsing the config file. Cf. implementation of
+-- 'runConfigParser' for usage.
+parseConfig :: IOSArrow XmlTree Config
+parseConfig =
+  pcTextRoot <+>
+  pcDroppedTreeSimple <+>
+  pcLinebreak <+>
+  pcHyphen <+>
+  pcAbbrev1CharToken <+>
+  pcMonth <+>
+  pcTcfTextCorpusNamespace <+>
+  pcTcfIdBase <+>
+  pcTcfIdPrefixDelimiter <+>
+  pcTcfIdPrefixLength
+
+-- | Arrows for parsing special configuration aspects are all prefixed
+-- with pc which stands for parseConfig.
+
+pcTextRoot :: IOSArrow XmlTree Config
+pcTextRoot =
+  hasName "textRoot" >>>
+  getAttrValue0 "name" &&&
+  getAttrValue0 "namespace" >>>
+  arr (TextRoot . (uncurry mkNsName))
+
+pcDroppedTreeSimple :: IOSArrow XmlTree Config
+pcDroppedTreeSimple =
+  hasName "droppedTree" >>> getChildren >>>
+  hasName "simpleElement" >>>
+  getAttrValue0 "name" &&&
+  getAttrValue0 "namespace" >>>
+  arr (DroppedTree . (uncurry mkNsName))
+
+pcLinebreak :: IOSArrow XmlTree Config
+pcLinebreak =
+  hasName "tokenizer" >>> getChildren >>>
+  hasName "linebreak" >>>
+  getAttrValue0 "name" &&&
+  getAttrValue0 "namespace" >>>
+  arr (LineBreak . (uncurry mkNsName))
+
+pcHyphen :: IOSArrow XmlTree Config
+pcHyphen =
+  hasName "tokenizer" >>> getChildren >>>
+  hasName "hyphen" >>>
+  getAttrValue0 "char" >>>
+  arr (Hyphen . head)
+
+pcMonth :: IOSArrow XmlTree Config
+pcMonth =
+  hasName "tokenizer" >>> getChildren >>>
+  hasName "month" >>> getChildren >>>
+  isText >>> getText >>>
+  arr (Month)
+
+pcAbbrev1CharToken :: IOSArrow XmlTree Config
+pcAbbrev1CharToken =
+  hasName "tokenizer" >>> getChildren >>>
+  hasName "abbrev1Char" >>>
+  getAttrValue0 "abbrev" >>>
+  arr (Abbrev1CharToken . (== "True"))
+
+pcTcfTextCorpusNamespace :: IOSArrow XmlTree Config
+pcTcfTextCorpusNamespace =
+  hasName "tcf" >>> getChildren >>>
+  hasName "tcfNamespace" >>>
+  getAttrValue "namespace" >>>
+  arr (TcfTextCorpusNamespace . defaultOnNull defaultTcfTextCorpusNamespace)
+
+pcTcfIdBase :: IOSArrow XmlTree Config
+pcTcfIdBase =
+  hasName "tcf" >>> getChildren >>>
+  hasName "tcfIdBase" >>>   getAttrValue "base" >>>
+  arr (TcfIdBase . fromMaybe defaultTcfIdBase . fmap fst . C.readInt . C.pack) 
+
+pcTcfIdPrefixDelimiter :: IOSArrow XmlTree Config
+pcTcfIdPrefixDelimiter =
+  hasName "tcf" >>> getChildren >>>
+  hasName "tcfIdPrefix" >>>
+  getAttrValue "delimiter" >>>
+  arr (TcfIdPrefixDelimiter . head . defaultOnNull (defaultTcfIdPrefixDelimiter:[]))
+
+pcTcfIdPrefixLength :: IOSArrow XmlTree Config
+pcTcfIdPrefixLength =
+  hasName "tcf" >>> getChildren >>>
+  hasName "tcfIdPrefix" >>>
+  getAttrValue "length" >>>
+  arr (TcfIdPrefixLength . fromMaybe defaultTcfIdPrefixLength . fmap fst . C.readInt . C.pack)
+
+defaultOnNull :: [a] -> [a] -> [a]
+defaultOnNull deflt [] = deflt
+defaultOnNull _ (x:xs) = x:xs
