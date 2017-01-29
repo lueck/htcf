@@ -20,6 +20,8 @@ module Text.XML.TCF.Parser.ConfigParser
   , getTcfIdUnprefixMethod
   , getAbbreviations
   , addAbbreviations
+  , getMonths
+  , abbrev1CharTokenP
   , defaultTcfTextCorpusNamespace
   , defaultTcfIdBase
   , defaultTcfIdPrefixDelimiter
@@ -58,6 +60,14 @@ data Config =
                                         -- in a TCF file.
   | Abbreviation String                 -- ^ An abbreviation (string
                                         -- without ending dot)
+  | Month String                        -- ^ A month. Months are
+                                        -- needed for abbreviation and
+                                        -- tokenization of days.
+  | Abbrev1CharToken Bool               -- ^ Holds a boolean value,
+                                        -- whether tokens with a
+                                        -- length of one word followed
+                                        -- by a punct are treated as a
+                                        -- abbreviation.
   deriving (Show, Eq)
 
 -- * Default configuration values.
@@ -85,6 +95,11 @@ defaultTcfIdPrefixLength = 2
 -- file: 'Length'.
 defaultTcfIdUnprefixMethod :: UnprefixMethod
 defaultTcfIdUnprefixMethod = Length
+
+-- | By default, tokens of the length of 1 character are not treated
+-- as abbrevs.
+defaultAbbrev1CharToken :: Bool
+defaultAbbrev1CharToken = False
 
 -- * Getting aspects of the configuration.
 
@@ -162,6 +177,20 @@ getAbbreviations :: [Config] -> [String]
 getAbbreviations [] = []
 getAbbreviations ((Abbreviation abbr):xs) = abbr:getAbbreviations xs
 getAbbreviations (_:xs) = getAbbreviations xs
+
+
+-- | Get the list of month names form config.
+getMonths :: [Config] -> [String]
+getMonths [] = []
+getMonths ((Month m):xs) = m:getMonths xs
+getMonths (_:xs) = getMonths xs
+
+-- | Test if abbreviation of 1 char length tokens is active or not.
+abbrev1CharTokenP :: [Config] -> Bool
+abbrev1CharTokenP [] = defaultAbbrev1CharToken
+abbrev1CharTokenP ((Abbrev1CharToken b):_) = b
+abbrev1CharTokenP (_:xs) = abbrev1CharTokenP xs
+
 
 
 -- * Setters for aspects of the configuration.

@@ -4,6 +4,9 @@ module Text.XML.TCF.Parser.Tokenizer
   , getToken
   , nthWordStart
   , dropNWords
+  , isNumDay
+  , isNumMonth
+  , isRealAbbrev
   ) where
 
 import Data.Char
@@ -26,14 +29,6 @@ data Token =
 
 getToken :: Token -> String
 getToken (Token t _ _ _ _ _) = t
-
--- FIXME: get this from config
-getMonths :: [Config] -> [String]
-getMonths _ = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "Oktober", "September", "November", "Dezember"]
-
--- FIXME: get this from config
-abbrev1CharP :: [Config] -> Bool
-abbrev1CharP _ = True
 
 isNumDay :: String -> Bool
 isNumDay (d:'.':[]) = isDigit d
@@ -247,8 +242,8 @@ tokenize cfg tcf = tokenize' 1 tcf
       -- Abbreviations
       
       -- .\.: one character followed be dot
-      | (abbrev1CharP cfg) &&
-        (isLetter t) && (not $ null ts) && (head ts) == '.'
+      | (isLetter t) && (not $ null ts) && (head ts) == '.' &&
+        (abbrev1CharTokenP cfg)
       = (mkToken (t:".") i tOffset sOffset 0)
         : (tokenize' (i+1) ((mkText (t:ts) 2 tOffset sOffset) : xs))
       -- abbrev: next word lower case
