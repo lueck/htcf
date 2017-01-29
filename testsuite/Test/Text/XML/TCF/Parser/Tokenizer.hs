@@ -152,6 +152,12 @@ test_numLitMonthDateLineBreak = do
               (TcfLineBreak),
               (TcfText "\nOktob. 1517 is a date." 4 7)]  
 
+test_litMonthOnly = do
+  assertEqual
+    ["im", "Okt.", "1517"]
+    (map getToken (tokenize [] parsed))
+  where
+    parsed = [(TcfText "im   Okt. 1517" 1 1)]
 
 test_numLitMonthDateNoAbbrev = do
   assertEqual
@@ -162,7 +168,7 @@ test_numLitMonthDateNoAbbrev = do
 
 test_invalidDay = do
   assertEqual
-    ["41", ".", "Oktob", ".", "1517", "is", "no", "date", "."]
+    ["41", ".", "Oktob.", "1517", "is", "no", "date", "."]
     (map getToken (tokenize [] parsed))
   where
     parsed = [(TcfText "41. Oktob. 1517 is no date." 1 1)]  

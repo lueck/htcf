@@ -31,6 +31,9 @@ getToken (Token t _ _ _ _ _) = t
 getMonths :: [Config] -> [String]
 getMonths _ = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "Oktober", "September", "November", "Dezember"]
 
+-- FIXME: get this from config
+abbrev1CharP :: [Config] -> Bool
+abbrev1CharP _ = True
 
 isNumDay :: String -> Bool
 isNumDay (d:'.':[]) = isDigit d
@@ -235,9 +238,9 @@ tokenize cfg tcf = tokenize' 1 tcf
 
       -- Abbreviations
       
-      -- .\. (FIXME Really? We may have a one-char word before
-      -- sentence boundary.)
-      | (isLetter t) && (not $ null ts) && (head ts) == '.'
+      -- .\.: one character followed be dot
+      | (abbrev1CharP cfg) &&
+        (isLetter t) && (not $ null ts) && (head ts) == '.'
       = (mkToken (t:".") i tOffset sOffset 0)
         : (tokenize' (i+1) ((mkText (t:ts) 2 tOffset sOffset) : xs))
       -- abbrev: next word lower case
@@ -273,6 +276,11 @@ tokenize cfg tcf = tokenize' 1 tcf
       = (mkToken (head wds) i tOffset sOffset 0)
         : (mkToken (take sndWdLen' (wds !! 1)) (i+1) tOffset sOffset sndWdStart)
         : (tokenize' (i+3) ((mkText (t:ts) (sndWdStart+sndWdLen') tOffset sOffset) : xs))
+      -- Date (iv): literal month abbreviated, without day. We
+      -- generate 1 Token.
+      | isLitMonthAbbrev cfg $ head wds
+      = (mkToken (head wds) i tOffset sOffset 0)
+        : (tokenize' (i+1) ((mkText (t:ts) fstWdLen tOffset sOffset) : xs))
 
       -- Punctuation token
       | isPunctuation t
