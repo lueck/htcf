@@ -267,7 +267,7 @@ tokenize cfg tcf = tokenize' 1 tcf
            (isLitMonthAbbrev cfg $ wds !! 1))     -- literal month
       = (mkToken (head wds) i tOffset sOffset 0)
         : (mkToken (wds !! 1) (i+1) tOffset sOffset sndWdStart)
-        : (tokenize' (i+3) ((mkText (t:ts) (sndWdStart+sndWdLen) tOffset sOffset) : xs))
+        : (tokenize' (i+2) ((mkText (t:ts) (sndWdStart+sndWdLen) tOffset sOffset) : xs))
       -- Date (iii): day. literal month not abbreviated. We generate 2
       -- tokens. FIXME: german date format.
       | length wds >= 2 &&
@@ -275,7 +275,7 @@ tokenize cfg tcf = tokenize' 1 tcf
           ((take sndWdLen' $ wds !! 1) `elem` (getMonths cfg))     -- literal month
       = (mkToken (head wds) i tOffset sOffset 0)
         : (mkToken (take sndWdLen' (wds !! 1)) (i+1) tOffset sOffset sndWdStart)
-        : (tokenize' (i+3) ((mkText (t:ts) (sndWdStart+sndWdLen') tOffset sOffset) : xs))
+        : (tokenize' (i+2) ((mkText (t:ts) (sndWdStart+sndWdLen') tOffset sOffset) : xs))
       -- Date (iv): literal month abbreviated, without day. We
       -- generate 1 Token.
       | isLitMonthAbbrev cfg $ head wds
