@@ -152,3 +152,32 @@ test_numLitMonthDateLineBreak = do
               (TcfLineBreak),
               (TcfText "\nOktob. 1517 is a date." 4 7)]  
   
+test_invalidDay = do
+  assertEqual
+    ["41", ".", "Oktob", ".", "1517", "is", "no", "date", "."]
+    (map getToken (tokenize [] parsed))
+  where
+    parsed = [(TcfText "41. Oktob. 1517 is no date." 1 1)]  
+
+test_invalidNumMonth = do
+  assertEqual
+    ["31", ".", "13", ".", "1517", "is", "no", "date", "."]
+    (map getToken (tokenize [] parsed))
+  where
+    parsed = [(TcfText "31. 13. 1517 is no date." 1 1)]  
+
+test_invalidLitMonth = do
+  assertEqual
+    ["31", ".", "Octop", ".", "1517", "is", "no", "date", "."]
+    (map getToken (tokenize [] parsed))
+  where
+    parsed = [(TcfText "31. Octop. 1517 is no date." 1 1)]  
+
+-- More abbreviations
+
+test_abbrevNoSpaces = do
+  assertEqual
+    ["etwas", "Ausgedehntes", ",", "z.", "B.", "eine", "Wolke"]
+    (map getToken (tokenize [] parsed))
+  where
+    parsed = [(TcfText "etwas Ausgedehntes, z.B. eine Wolke" 1 1)]  

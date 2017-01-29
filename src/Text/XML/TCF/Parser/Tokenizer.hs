@@ -33,9 +33,23 @@ numberDotP ('.':[]) = True
 numberDotP (_:[]) = False
 numberDotP (x:xs) = (isDigit x) && numberDotP xs
 
-monthDotP :: String -> Bool
-monthDotP [] = False
-monthDotP s
+isNumDay :: String -> Bool
+isNumDay (d:'.':[]) = isDigit d
+isNumDay ('0':d:'.':[]) = isDigit d
+isNumDay ('1':d:'.':[]) = isDigit d
+isNumDay ('2':d:'.':[]) = isDigit d
+isNumDay ('3':d:'.':[]) = d == '0' || d == '1'
+isNumDay _ = False
+
+isNumMonth :: String -> Bool
+isNumMonth (d:'.':[]) = isDigit d
+isNumMonth ('0':d:'.':[]) = isDigit d
+isNumMonth ('1':d:'.':[]) = d == '0' || d == '1' || d == '2'
+isNumMonth _ = False
+
+isLitMonth :: String -> Bool
+isLitmonth [] = False
+isLitMonth s
   | last s == '.' = foldl (\acc m -> acc || (isSubsequenceOf sWithoutDot m)) False months
   | otherwise = s `elem` months
   where
@@ -215,7 +229,10 @@ tokenize cfg tcf = tokenize' 1 tcf
       -- Drop heading space
       | isSpace t
       = tokenize' i ((mkText (t:ts) spaces tOffset sOffset) : xs)
-      -- abbrev: .\. (FIXME Really? We may have a one-char word before
+
+      -- Abbreviations
+      
+      -- .\. (FIXME Really? We may have a one-char word before
       -- sentence boundary.)
       | (isLetter t) && (not $ null ts) && (head ts) == '.'
       = (mkToken (t:".") i tOffset sOffset 0)
@@ -226,18 +243,25 @@ tokenize cfg tcf = tokenize' 1 tcf
         : (tokenize' (i+1) ((mkText (t:ts) fstWdLen tOffset sOffset) : xs))
       -- Date (i): day. month. year[. -> sentence boundary]. We
       -- generate 3 Tokens to get the sentence boundary right, which
-      -- is left for the next call of tokenize'.
+      -- is left for the next call of tokenize'. FIXME: this is german
+      -- date format.
       | length wds >= 3 &&
-          (numberDotP $ head wds) &&
-          ( fstWdLen == 2 || fstWdLen == 3 ) &&
-          (((numberDotP $ wds !! 1) && ( sndWdLen == 2 || sndWdLen == 3 )) || -- numeric month
-            (monthDotP $ wds !! 1)) &&  -- literal month
-          -- Leave that? Year may be left.
-          (all isDigit $ take thrdWdLen $ wds !! 2)   -- only digits digits before next break
+          (isNumDay $ head wds) &&       -- numeric day
+          ((isNumMonth $ wds !! 1) ||    -- numeric month
+           (isLitMonth $ wds !! 1)) &&   -- literal month
+          (all isDigit $ take thrdWdLen $ wds !! 2)   -- numeric year
       = (mkToken (head wds) i tOffset sOffset 0)
         : (mkToken (wds !! 1) (i+1) tOffset sOffset sndWdStart)
         : (mkToken (take thrdWdLen (wds !! 2)) (i+2) tOffset sOffset thrdWdStart)
         : (tokenize' (i+3) ((mkText (t:ts) (thrdWdStart+thrdWdLen) tOffset sOffset) : xs))
+      -- Date (ii): day. month. We generate 2 tokens. FIXME: german date format.
+      | length wds >= 2 &&
+          (isNumDay $ head wds) &&      -- numeric day
+          ((isNumMonth $ wds !! 1) ||   -- numeric month
+           (isLitMonth $ wds !! 1))     -- literal month
+      = (mkToken (head wds) i tOffset sOffset 0)
+        : (mkToken (wds !! 1) (i+1) tOffset sOffset sndWdStart)
+        : (tokenize' (i+3) ((mkText (t:ts) (sndWdStart+sndWdLen) tOffset sOffset) : xs))
 
       -- Punctuation token
       | isPunctuation t
