@@ -66,17 +66,6 @@ isRealAbbrev abbrs str
     abbr = filter (isSubsequenceOf strWithoutDot) abbrs
 
 
-isLitMonthAbbrev :: [Config] -> String -> Bool
-isLitMonthAbbrev _ [] = False
-isLitMonthAbbrev cfg s
-  -- | last s == '.' = foldl (\acc m -> acc || (isSubsequenceOf sWithoutDot m)) False months
-  | (last s == '.') && (not $ null month) = length s <= (length $ head month)
-  | otherwise = False
-  where
-    sWithoutDot = init s
-    month = filter (isSubsequenceOf sWithoutDot) months
-    months = getMonths cfg
-
 dropNWords :: (Char -> Bool) -> Int -> String -> String
 dropNWords _ 0 s = s
 dropNWords p n s = dropNWords p (n-1) $ dropWhile (not . p) $ dropWhile p s
@@ -106,6 +95,10 @@ tokenize cfg tcf = tokenize' 1 tcf
     isAbbrev :: String -> Bool
     -- the abbreviations from the config have not dot.
     isAbbrev str = str `elem` (map (++ ".") $ getAbbreviations cfg)
+
+    isLitMonthAbbrev :: String -> Bool
+    isLitMonthAbbrev = isRealAbbrev (getMonths cfg)
+
 
     mkToken :: String -- the token
             -> Int -- the token ID
@@ -272,7 +265,7 @@ tokenize cfg tcf = tokenize' 1 tcf
       | length wds >= 3 &&
           (isNumDay $ head wds) &&       -- numeric day
           ((isNumMonth $ wds !! 1) ||    -- numeric month
-           (isLitMonthAbbrev cfg $ wds !! 1)) &&   -- literal month
+           (isLitMonthAbbrev $ wds !! 1)) &&   -- literal month
           (all isDigit $ take thrdWdLen' $ wds !! 2)   -- numeric year
       = (mkToken (head wds) i tOffset sOffset 0)
         : (mkToken (wds !! 1) (i+1) tOffset sOffset sndWdStart)
@@ -282,7 +275,7 @@ tokenize cfg tcf = tokenize' 1 tcf
       | length wds >= 2 &&
           (isNumDay $ head wds) &&      -- numeric day
           ((isNumMonth $ wds !! 1) ||   -- numeric month
-           (isLitMonthAbbrev cfg $ wds !! 1))     -- literal month
+           (isLitMonthAbbrev $ wds !! 1))     -- literal month
       = (mkToken (head wds) i tOffset sOffset 0)
         : (mkToken (wds !! 1) (i+1) tOffset sOffset sndWdStart)
         : (tokenize' (i+2) ((mkText (t:ts) (sndWdStart+sndWdLen) tOffset sOffset) : xs))
@@ -296,7 +289,7 @@ tokenize cfg tcf = tokenize' 1 tcf
         : (tokenize' (i+2) ((mkText (t:ts) (sndWdStart+sndWdLen') tOffset sOffset) : xs))
       -- Date (iv): literal month abbreviated, without day. We
       -- generate 1 Token.
-      | isLitMonthAbbrev cfg $ head wds
+      | isLitMonthAbbrev $ head wds
       = (mkToken (head wds) i tOffset sOffset 0)
         : (tokenize' (i+1) ((mkText (t:ts) fstWdLen tOffset sOffset) : xs))
 
