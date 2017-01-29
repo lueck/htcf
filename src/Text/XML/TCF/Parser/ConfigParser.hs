@@ -18,6 +18,8 @@ module Text.XML.TCF.Parser.ConfigParser
   , getTcfIdPrefixLength
   , setTcfIdPrefixLength
   , getTcfIdUnprefixMethod
+  , getAbbreviations
+  , addAbbreviations
   , defaultTcfTextCorpusNamespace
   , defaultTcfIdBase
   , defaultTcfIdPrefixDelimiter
@@ -54,6 +56,8 @@ data Config =
                                         -- file.
   | TcfIdUnprefixMethod UnprefixMethod  -- ^ Howto unprefix an ID used
                                         -- in a TCF file.
+  | Abbreviation String                 -- ^ An abbreviation (string
+                                        -- without ending dot)
   deriving (Show, Eq)
 
 -- * Default configuration values.
@@ -153,6 +157,12 @@ getTcfIdUnprefixMethod ((TcfIdUnprefixMethod Length):_) = Length
 getTcfIdUnprefixMethod ((TcfIdUnprefixMethod Delimiter):_) = Delimiter
 getTcfIdUnprefixMethod (_:xs) = getTcfIdUnprefixMethod xs
 
+-- | Get the list of abbreviation strings from config.
+getAbbreviations :: [Config] -> [String]
+getAbbreviations [] = []
+getAbbreviations ((Abbreviation abbr):xs) = abbr:getAbbreviations xs
+getAbbreviations (_:xs) = getAbbreviations xs
+
 
 -- * Setters for aspects of the configuration.
 
@@ -169,6 +179,14 @@ setTcfIdPrefixLength :: Int       -- ^ the length of the ID prefix
                      -> [Config]  -- ^ the existing configuration
                      -> [Config]  -- ^ the new configuration is returned
 setTcfIdPrefixLength l cfg = (TcfIdPrefixLength l) : cfg                     
+
+-- | Add a list of strings to the known abbreviations
+-- (cf. 'Abbreviation').
+addAbbreviations :: [String] -- ^ the list of abbreviations
+                 -> [Config] -- ^ the existing config
+                 -> [Config] -- ^ returned config with new abbrevs
+addAbbreviations abbrevs cfg = cfg ++ (map (Abbreviation) abbrevs)
+
 
 -- * Parsing the xml config file.
 

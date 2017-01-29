@@ -35,9 +35,6 @@ getMonths _ = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "Au
 abbrev1CharP :: [Config] -> Bool
 abbrev1CharP _ = True
 
-getAbbreviations :: [Config] -> [String]
-getAbbreviations _ = ["Prof", "Hrn", "Fr", "Nr", "Friedr", "dess", "deſſ"]
-
 isNumDay :: String -> Bool
 isNumDay (d:'.':[]) = isDigit d
 isNumDay ('0':d:'.':[]) = isDigit d
