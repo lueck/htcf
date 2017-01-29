@@ -196,3 +196,11 @@ test_abbrevNoSpaces = do
     (map getToken (tokenize [] parsed))
   where
     parsed = [(TcfText "etwas Ausgedehntes, z.B. eine Wolke" 1 1)]  
+
+test_confAbbrevs = do
+  assertEqual
+    ["Prof.", "Rammler"]
+    (map getToken (tokenize [] parsed))
+  where
+    parsed = [(TcfText "Prof. Rammler" 1 1)]  
+

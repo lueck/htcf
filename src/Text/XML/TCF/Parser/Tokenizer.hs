@@ -35,6 +35,9 @@ getMonths _ = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "Au
 abbrev1CharP :: [Config] -> Bool
 abbrev1CharP _ = True
 
+getAbbreviations :: [Config] -> [String]
+getAbbreviations _ = ["Prof", "Hrn", "Fr", "Nr", "Friedr", "dess", "deſſ"]
+
 isNumDay :: String -> Bool
 isNumDay (d:'.':[]) = isDigit d
 isNumDay ('0':d:'.':[]) = isDigit d
@@ -49,9 +52,20 @@ isNumMonth ('0':d:'.':[]) = isDigit d
 isNumMonth ('1':d:'.':[]) = d == '0' || d == '1' || d == '2'
 isNumMonth _ = False
 
--- | Returns true, if the string parameter is a real subsequence of a
--- month ending with a dot. Real subsequence means, that it is shorter
--- than the matching month.
+-- | Returns true, if the test string is a real subsequence of an
+-- abbreviation string, i.e. it is shorter than the matching
+-- abbreviation string.
+isRealAbbrev :: [String] -> String -> Bool
+isRealAbbrev [] _ = False
+isRealAbbrev _ [] = False
+isRealAbbrev abbrs str
+  | (last str == '.') && (not $ null abbr) = length str <= (length $ head abbr)
+  | otherwise = False
+  where
+    strWithoutDot = init str
+    abbr = filter (isSubsequenceOf strWithoutDot) abbrs
+
+
 isLitMonthAbbrev :: [Config] -> String -> Bool
 isLitMonthAbbrev _ [] = False
 isLitMonthAbbrev cfg s
@@ -88,6 +102,10 @@ tokenize cfg tcf = tokenize' 1 tcf
       | otherwise = isSpace c || isPunctuation c -- spaces and punctuation do
     hasBreak :: String -> Bool
     hasBreak s = isJust $ find isBreak s
+
+    isAbbrev :: String -> Bool
+    -- the abbreviations from the config have not dot.
+    isAbbrev str = str `elem` (map (++ ".") $ getAbbreviations cfg)
 
     mkToken :: String -- the token
             -> Int -- the token ID
@@ -279,6 +297,11 @@ tokenize cfg tcf = tokenize' 1 tcf
       -- Date (iv): literal month abbreviated, without day. We
       -- generate 1 Token.
       | isLitMonthAbbrev cfg $ head wds
+      = (mkToken (head wds) i tOffset sOffset 0)
+        : (tokenize' (i+1) ((mkText (t:ts) fstWdLen tOffset sOffset) : xs))
+
+      -- Abbreviation from config
+      | isAbbrev $ head wds
       = (mkToken (head wds) i tOffset sOffset 0)
         : (tokenize' (i+1) ((mkText (t:ts) fstWdLen tOffset sOffset) : xs))
 
