@@ -27,12 +27,6 @@ data Token =
 getToken :: Token -> String
 getToken (Token t _ _ _ _ _) = t
 
-numberDotP :: String -> Bool
-numberDotP [] = False
-numberDotP ('.':[]) = True
-numberDotP (_:[]) = False
-numberDotP (x:xs) = (isDigit x) && numberDotP xs
-
 isNumDay :: String -> Bool
 isNumDay (d:'.':[]) = isDigit d
 isNumDay ('0':d:'.':[]) = isDigit d
@@ -48,7 +42,7 @@ isNumMonth ('1':d:'.':[]) = d == '0' || d == '1' || d == '2'
 isNumMonth _ = False
 
 isLitMonth :: String -> Bool
-isLitmonth [] = False
+isLitMonth [] = False
 isLitMonth s
   | last s == '.' = foldl (\acc m -> acc || (isSubsequenceOf sWithoutDot m)) False months
   | otherwise = s `elem` months
@@ -281,4 +275,3 @@ tokenize cfg tcf = tokenize' 1 tcf
         thrdWdLen = length $ takeWhile (not . isBreak) (wds !! 2) -- no dot
         sndWdStart = nthWordStart isBreak 1 (t:ts)
         thrdWdStart = nthWordStart isBreak 2 (t:ts)
-        sndDotPos = (elemIndices '.' (t:ts)) !! 1
