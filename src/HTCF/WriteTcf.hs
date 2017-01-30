@@ -5,11 +5,11 @@ module HTCF.WriteTcf
 import Text.XML.HXT.Core
 import Data.Maybe
 
-import HTCF.Layers
+import HTCF.LayerTypeDefs
 
-import Text.XML.TCF.Parser.ConfigParser
+import HTCF.ConfigParser
 
-writeTokenLayer :: (ArrowXml a) => [Config] -> [Layer] -> a XmlTree XmlTree
+writeTokenLayer :: (ArrowXml a) => [Config] -> [Token] -> a XmlTree XmlTree
 writeTokenLayer cfg ts =
   (mkqelem
    (mkNsName "tokens" ns) -- qname
@@ -18,7 +18,7 @@ writeTokenLayer cfg ts =
   where
     ns = getTcfTextCorpusNamespace cfg
     maybeAttr n val = maybeToList $ fmap ((sattr n) . show) val
-    writeToken :: (ArrowXml a) => Layer -> a XmlTree XmlTree
+    writeToken :: (ArrowXml a) => Token -> a XmlTree XmlTree
     writeToken (Token t idd start end sStart sEnd) =
       (mkqelem
        (mkNsName "token" ns)
