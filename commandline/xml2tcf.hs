@@ -57,7 +57,7 @@ run (Convert configFile abbrevFile outputMethod outputStructure fName) = do
                  )
   rc <- runX (root
               []
-              [(writeTokenLayer config $ tokenize config $ propagateOffsets parsed)] >>>
+              [(writeTokenLayer config $ tokenize (addAbbreviations (lines abbrevs) config) $ propagateOffsets parsed)] >>>
               writeDocumentToString [withIndent yes])
   putStrLn $ concat rc
   where
