@@ -24,8 +24,9 @@ library
                    , HTCF.Position
                    , HTCF.Tokenizer
                    , HTCF.Utils
-                   , HTCF.ReadTcf
                    , HTCF.LayerTypeDefs
+                   , HTCF.ReadTcf
+                   , HTCF.WriteTcf
   -- other-modules:       
   -- other-extensions:    
   build-depends:     base >=4.9 && <4.10
