@@ -17,15 +17,15 @@ extra-source-files:  ChangeLog.md
 cabal-version:       >=1.10
 
 library
-  exposed-modules:   Text.XML.TCF.Arrow.ArrowXml
-                   , Text.XML.TCF.Parser.ConfigParser
-                   , Text.XML.TCF.Parser.TcfLayerParser
-                   , Text.XML.TCF.Parser.TcfElement
-                   , Text.XML.TCF.Parser.Position
-                   , Text.XML.TCF.Parser.Tokenizer
+  exposed-modules:   HTCF.ArrowXml
+                   , HTCF.ConfigParser
+                   , HTCF.TcfParser
+                   , HTCF.TcfParserTypeDefs
+                   , HTCF.Position
+                   , HTCF.Tokenizer
                    , HTCF.Utils
                    , HTCF.ReadTcf
-                   , HTCF.Layers
+                   , HTCF.LayerTypeDefs
   -- other-modules:       
   -- other-extensions:    
   build-depends:     base >=4.9 && <4.10

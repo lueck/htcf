@@ -1,4 +1,4 @@
-module Text.XML.TCF.Parser.TcfLayerParser
+module HTCF.TcfParser
   ( mkTcfElement
   , mkTcfElementButStructure
   , mkTcfText
@@ -8,10 +8,10 @@ module Text.XML.TCF.Parser.TcfLayerParser
 
 import Text.XML.HXT.Core
 
-import Text.XML.TCF.Parser.TcfElement
-import Text.XML.TCF.Parser.Position
-import Text.XML.TCF.Parser.ConfigParser
-import Text.XML.TCF.Arrow.ArrowXml
+import HTCF.TcfParserTypeDefs
+import HTCF.Position
+import HTCF.ConfigParser
+import HTCF.ArrowXml
 
 -- | @mkTcfElement@ can be used to generate a (deterministic) list of
 -- 'TcfElement's, which can then be feed to the tokenizer or a

@@ -1,4 +1,4 @@
-module Text.XML.TCF.Parser.Position
+module HTCF.Position
   where
 
 import Text.XML.HXT.Core

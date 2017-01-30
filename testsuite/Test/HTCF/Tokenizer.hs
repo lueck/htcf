@@ -1,13 +1,13 @@
 {-# OPTIONS_GHC -F -pgmF htfpp #-}
 
-module Test.Text.XML.TCF.Parser.Tokenizer where
+module Test.HTCF.Tokenizer where
 
 import Test.Framework
 import Text.XML.HXT.Core
 
-import Text.XML.TCF.Parser.Tokenizer
-import Text.XML.TCF.Parser.ConfigParser
-import Text.XML.TCF.Parser.TcfElement
+import HTCF.Tokenizer
+import HTCF.ConfigParser
+import HTCF.TcfParserTypeDefs
 
 monthsConfig = [(Month "Oktober")]
 

@@ -11,7 +11,7 @@ import Data.Char (ord, digitToInt, isDigit)
 import Data.List
 import Data.Maybe
 
-import Text.XML.TCF.Parser.ConfigParser
+import HTCF.ConfigParser
 
 -- * Parse a string representation of a number into an integer.
 

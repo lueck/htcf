@@ -1,13 +1,13 @@
 {-# OPTIONS_GHC -F -pgmF htfpp #-}
 
-module Test.Text.XML.TCF.Parser.ConfigParser where
+module Test.HTCF.ConfigParser where
 
 import Test.Framework
 import Text.XML.HXT.Core
 
-import Text.XML.TCF.Parser.ConfigParser
+import HTCF.ConfigParser
 
-configFile = "testsuite/Test/Text/XML/TCF/Parser/config.xml"
+configFile = "testsuite/Test/HTCF/config.xml"
 
 test_runConfigParser = do
   results <- runConfigParser configFile

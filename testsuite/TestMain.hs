@@ -3,8 +3,8 @@ module Main where
 
 import Test.Framework
 import Test.Framework.BlackBoxTest
-import {-@ HTF_TESTS @-} Test.Text.XML.TCF.Arrow.ArrowXml
-import {-@ HTF_TESTS @-} Test.Text.XML.TCF.Parser.ConfigParser
-import {-@ HTF_TESTS @-} Test.Text.XML.TCF.Parser.Tokenizer
+import {-@ HTF_TESTS @-} Test.HTCF.ArrowXml
+import {-@ HTF_TESTS @-} Test.HTCF.ConfigParser
+import {-@ HTF_TESTS @-} Test.HTCF.Tokenizer
 
 main = htfMain htf_importedTests

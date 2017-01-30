@@ -2,7 +2,7 @@
 -- @['Config']@. Use 'getTextRoot', 'getHyphens', etc. to get an
 -- aspect of the configuration from this list.
 
-module Text.XML.TCF.Parser.ConfigParser
+module HTCF.ConfigParser
   ( Config (..)
   , UnprefixMethod (..)
   , runConfigParser

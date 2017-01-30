@@ -1,4 +1,4 @@
-module Text.XML.TCF.Parser.Tokenizer
+module HTCF.Tokenizer
   ( Token (..)
   , tokenize
   , getToken
@@ -13,19 +13,10 @@ import Data.Char
 import Data.List
 import Data.Maybe
 
-import Text.XML.TCF.Parser.Position
-import Text.XML.TCF.Parser.TcfElement
-import Text.XML.TCF.Parser.ConfigParser
-
-data Token =
-  Token
-  { token :: String
-  , tokenId :: Maybe Int
-  , start :: Maybe TextPosition
-  , end :: Maybe TextPosition
-  , srcStart :: Maybe XmlPosition
-  , srcEnd :: Maybe XmlPosition
-  } deriving (Show, Eq)
+import HTCF.LayerTypeDefs
+import HTCF.Position
+import HTCF.TcfParserTypeDefs
+import HTCF.ConfigParser
 
 getToken :: Token -> String
 getToken (Token t _ _ _ _ _) = t

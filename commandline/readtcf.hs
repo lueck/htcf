@@ -6,13 +6,13 @@ import Text.XML.HXT.Core
 import Data.Maybe
 
 import HTCF.ReadTcf
-import HTCF.Layers
+import HTCF.LayerTypeDefs
 import HTCF.Utils
 
-import Text.XML.TCF.Parser.ConfigParser
-import Text.XML.TCF.Parser.TcfLayerParser
-import Text.XML.TCF.Parser.TcfElement
-import Text.XML.TCF.Parser.Tokenizer
+import HTCF.ConfigParser
+import HTCF.TcfParser
+import HTCF.TcfParserTypeDefs
+import HTCF.Tokenizer
 
 data Convert =
   Convert { configFile :: Maybe String

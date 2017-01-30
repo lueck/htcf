@@ -5,11 +5,12 @@ import Data.Monoid ((<>))
 import Text.XML.HXT.Core
 import Data.Maybe
 
-import Text.XML.TCF.Parser.ConfigParser
-import Text.XML.TCF.Parser.TcfLayerParser
-import Text.XML.TCF.Parser.TcfElement
-import Text.XML.TCF.Parser.Tokenizer
-import Text.XML.TCF.Arrow.ArrowXml
+import HTCF.ConfigParser
+import HTCF.TcfParser
+import HTCF.TcfParserTypeDefs
+import HTCF.LayerTypeDefs
+import HTCF.Tokenizer
+import HTCF.ArrowXml
 
 data Convert =
   Convert { configFile :: Maybe String

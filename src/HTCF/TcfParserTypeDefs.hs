@@ -1,4 +1,4 @@
-module Text.XML.TCF.Parser.TcfElement
+module HTCF.TcfParserTypeDefs
   ( TcfElement (..)
   , isTcfText
   , isTcfStructure
@@ -12,7 +12,7 @@ module Text.XML.TCF.Parser.TcfElement
 
 import Text.XML.HXT.Core
 
-import Text.XML.TCF.Parser.Position
+import HTCF.Position
        
 data TcfElement =
   TcfText                          -- ^ constituent of text layer

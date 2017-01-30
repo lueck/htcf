@@ -1,14 +1,14 @@
 {-# OPTIONS_GHC -F -pgmF htfpp #-}
 
-module Test.Text.XML.TCF.Arrow.ArrowXml where
+module Test.HTCF.ArrowXml where
 
 import Test.Framework
 
 import Text.XML.HXT.Core
 
-import Text.XML.TCF.Arrow.ArrowXml
+import HTCF.ArrowXml
 
-fileA = "testsuite/Test/Text/XML/TCF/Arrow/file-a.xml"
+fileA = "testsuite/Test/HTCF/file-a.xml"
 
 test_nameIn = do
   results <- runX (readDocument [withValidate no] fileA >>>

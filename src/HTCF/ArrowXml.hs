@@ -1,4 +1,4 @@
-module Text.XML.TCF.Arrow.ArrowXml
+module HTCF.ArrowXml
   ( nameIn
   , qNameIn
   , stripName

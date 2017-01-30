@@ -7,12 +7,12 @@ module HTCF.ReadTcf
 
 import Text.XML.HXT.Core
 
-import HTCF.Layers
+import HTCF.LayerTypeDefs
 import HTCF.Utils
 
-import Text.XML.TCF.Parser.ConfigParser
+import HTCF.ConfigParser
 
-runTcfReader :: [Config] -> FilePath -> IO [Layer]
+runTcfReader :: [Config] -> FilePath -> IO [{- FIXME: -}Token]
 runTcfReader cfg fname = do
   layers <- runX (readDocument [withValidate no] fname >>>
                   propagateNamespaces //>
@@ -21,17 +21,18 @@ runTcfReader cfg fname = do
                   multi (parseTcfLayers cfg))
   return layers
 
-parseTcfLayers :: [Config] -> IOSArrow XmlTree Layer
+
+parseTcfLayers :: [Config] -> IOSArrow XmlTree {- FIXME: -}Token
 parseTcfLayers cfg =
   parseTokens cfg
 
-parseTokens :: [Config] -> IOSArrow XmlTree Layer
+parseTokens :: [Config] -> IOSArrow XmlTree Token
 parseTokens cfg =
   isElem >>> hasQName (mkNsName "tokens" $ getTcfTextCorpusNamespace cfg) >>>
   getChildren >>>
   isElem >>> parseToken cfg
 
-parseToken :: [Config] -> IOSArrow XmlTree Layer
+parseToken :: [Config] -> IOSArrow XmlTree Token
 parseToken cfg =
   hasQName (mkNsName "token" $ getTcfTextCorpusNamespace cfg) >>>
   (getChildren >>> getText) &&&
