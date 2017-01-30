@@ -82,6 +82,12 @@ data Config =
 
 -- * Default configuration values.
 
+-- | Default qualified name of the element node containing the text
+-- that is fed to the tokenizer etc. Defaults to TEI's \"text\"
+-- element.
+defaultTextRoot :: QName
+defaultTextRoot = mkNsName "text" "http://www.tei-c.org/ns/1.0"
+
 -- | Default value for the <TextCorpus> element of a TCF file:
 -- http://www.dspin.de/data/textcorpus
 defaultTcfTextCorpusNamespace :: String
@@ -117,9 +123,9 @@ defaultAbbrev1CharToken = False
 -- config. If there where multiple text roots defined in the config
 -- file, the qualified name of the first definition and only this one
 -- is returned.
-getTextRoot :: [Config] -> Maybe QName
-getTextRoot [] = Nothing
-getTextRoot ((TextRoot qn):_) = Just qn
+getTextRoot :: [Config] -> QName
+getTextRoot [] = defaultTextRoot
+getTextRoot ((TextRoot qn):_) = qn
 getTextRoot (_:xs) = getTextRoot xs
 
 -- | Returns a list of hyphen characters defined in the

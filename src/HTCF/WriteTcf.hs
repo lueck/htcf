@@ -1,5 +1,6 @@
 module HTCF.WriteTcf
   ( writeTokenLayer
+  , runTcfWriter
   ) where
 
 import Text.XML.HXT.Core
@@ -9,7 +10,19 @@ import HTCF.LayerTypeDefs
 
 import HTCF.ConfigParser
 
-writeTokenLayer :: (ArrowXml a) => [Config] -> [Token] -> a XmlTree XmlTree
+-- Does not really make sense here. Put it in the command line
+-- program.
+runTcfWriter :: [Config] -> [{- FIXME: -}Token] -> IO (String)
+runTcfWriter cfg toks = do
+  rc <- runX (root [] [(writeTokenLayer cfg toks)] >>>
+              writeDocumentToString [withIndent yes])
+  return $ concat rc
+
+
+-- | Arrow for writing the token layer.
+writeTokenLayer :: (ArrowXml a) => [Config] -- ^ the config
+                -> [Token]                  -- ^ the list of tokens
+                -> a XmlTree XmlTree        -- ^ returns an xml arrow
 writeTokenLayer cfg ts =
   (mkqelem
    (mkNsName "tokens" ns) -- qname

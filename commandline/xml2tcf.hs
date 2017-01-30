@@ -11,6 +11,7 @@ import HTCF.TcfParserTypeDefs
 import HTCF.LayerTypeDefs
 import HTCF.Tokenizer
 import HTCF.ArrowXml
+import HTCF.WriteTcf
 
 data Convert =
   Convert { configFile :: Maybe String
@@ -51,17 +52,15 @@ run (Convert configFile abbrevFile outputMethod outputStructure fName) = do
   parsed <- runX (readDocument [withValidate no] fName >>>
                   propagateNamespaces >>>
                   stripQNames (getDroppedTrees config) //>
-                  hasName "text" >>>
+                  hasQName (getTextRoot config) >>>
                   multi (parserArrow config)
                  )
-  writeOut ((addAbbreviations (lines abbrevs) config), parsed)
+  rc <- runX (root
+              []
+              [(writeTokenLayer config $ tokenize config $ propagateOffsets parsed)] >>>
+              writeDocumentToString [withIndent yes])
+  putStrLn $ concat rc
   where
-    writeOut :: ([Config], [TcfElement]) -> IO ()
-    writeOut = case outputMethod of
-          Just Raw -> print . (uncurry (\_ -> propagateOffsets))
-          Just PrettyList -> putStrLn . concatMap serialize . (uncurry (\_ -> propagateOffsets))
-          otherwise -> print . (uncurry (\cfg -> tokenize cfg . propagateOffsets))
-    tokWithOffsets cfg p = tokenize cfg $ propagateOffsets p
     parserArrow
       | outputStructure = mkTcfElement
       | otherwise = mkTcfElementButStructure
