@@ -15,13 +15,16 @@
     <linebreak
 	namespace="http://www.tei-c.org/ns/1.0"
 	name="l"/>
+    <hyphen char="¬"/><!-- DTA's hyphenation character on linebreak -->
+    <noBreak char="-"/>
+    <noBreak char="–"/><!-- 0x2013 -->
     <preNumAbbrev
 	string="Bar"/>
     <preNumAbbrev
 	string="Dan"/>
-    <hyphen char="-"/>
-    <hyphen char="¬"/><!-- DTA uses not as hyphen -->
+    <!--hyphen char="-"/-->
     <abbrev1Char abbrev="True"/>
+    <singleDigitOrdinal ordinal="True"/>
     <month>Januar</month>
     <month>Jänner</month>
     <month>Jaenner</month>

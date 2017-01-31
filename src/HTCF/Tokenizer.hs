@@ -71,8 +71,10 @@ tokenize cfg tcf = tokenize' 1 tcf
     isBreak :: Char -> Bool
     isBreak c
       | c `elem` (getHyphens cfg) = False  -- hyphens do not separate tokens
+      | c `elem` (getNoBreaks cfg) = False -- non-breaking characters from config
       | otherwise = isSpace c || isPunctuation c -- spaces and punctuation do
     hasBreak :: String -> Bool
+    -- FIXME: 'any' from Data.List may be faster.
     hasBreak s = isJust $ find isBreak s
 
     isAbbrev :: String -> Bool
@@ -222,17 +224,15 @@ tokenize cfg tcf = tokenize' 1 tcf
     tokenize' i ((TcfText "" _ _):xs)
       = tokenize' i xs
 
-    -- Make tokens by eating a single TcfText element. We prefer
-    -- pattern matching with destructuring the text into (t:ts) over
-    -- getting the head of the text in a guard.
-    tokenize' i ((TcfText (t:ts) tOffset sOffset):xs)
+    -- Make tokens by eating a single TcfText element.
+    tokenize' i ((TcfText x@(t:ts) tOffset sOffset):xs)
       -- Drop heading space
       | isSpace t
       = tokenize' i ((mkText (t:ts) spaces tOffset sOffset) : xs)
 
       -- Abbreviations
       
-      -- .\.: one character followed be dot
+      -- [a-zA-Z]\.: one letter followed be dot
       | (isLetter t) && (not $ null ts) && (head ts) == '.' &&
         (abbrev1CharTokenP cfg)
       = (mkToken (t:".") i tOffset sOffset 0)
@@ -275,6 +275,12 @@ tokenize cfg tcf = tokenize' 1 tcf
       | isLitMonthAbbrev $ head wds
       = (mkToken (head wds) i tOffset sOffset 0)
         : (tokenize' (i+1) ((mkText (t:ts) fstWdLen tOffset sOffset) : xs))
+
+      -- [0-9]\.: one digit followed by dot
+      | (isDigit t) && (not $ null ts) && (head ts) == '.' &&
+        (singleDigitOrdinalP cfg)
+      = (mkToken (t:".") i tOffset sOffset 0)
+        : (tokenize' (i+1) ((mkText x 2 tOffset sOffset) : xs))
 
       -- Abbreviation from config
       | isAbbrev $ head wds

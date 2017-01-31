@@ -18,7 +18,7 @@ test_runConfigParser = do
 test_getTextRoot = do
   results <- runConfigParser configFile
   assertEqual
-    (Just $ mkNsName "text" "http://www.tei-c.org/ns/1.0")
+    (mkNsName "text" "http://www.tei-c.org/ns/1.0")
     (getTextRoot results)
 
 test_getHyphens = do

@@ -21,17 +21,22 @@ module HTCF.ConfigParser
   , addAbbreviations
   , getMonths
   , abbrev1CharTokenP
+  , singleDigitOrdinalP
+  , getNoBreaks
   , defaultTcfTextCorpusNamespace
   , defaultTcfIdBase
   , defaultTcfIdPrefixDelimiter
   , defaultTcfIdPrefixLength
   , defaultTcfIdUnprefixMethod
+  , defaultAbbrev1CharToken
+  , defaultSingleDigitOrdinal
   , parseConfig
   , pcTextRoot
   , pcDroppedTreeSimple
   , pcLinebreak
   , pcHyphen
   , pcAbbrev1CharToken
+  , pcSingleDigitOrdinal
   , pcMonth
   , pcTcfTextCorpusNamespace
   , pcTcfIdBase
@@ -78,6 +83,15 @@ data Config =
                                         -- length of one word followed
                                         -- by a punct are treated as a
                                         -- abbreviation.
+  | SingleDigitOrdinal Bool             -- ^ Holds a boolean value,
+                                        -- whether single digits
+                                        -- followed by a punct are
+                                        -- treated as an ordinal.
+  | NoBreak Char                        -- ^ A character which by its
+                                        -- category results in a
+                                        -- break, i.e. punctuation or
+                                        -- space, but which is not
+                                        -- supposed to do so.
   deriving (Show, Eq)
 
 -- * Default configuration values.
@@ -116,6 +130,11 @@ defaultTcfIdUnprefixMethod = Length
 -- as abbrevs.
 defaultAbbrev1CharToken :: Bool
 defaultAbbrev1CharToken = False
+
+-- | By default, numbers of the lenght of 1 character are not treated
+-- as ordinals.
+defaultSingleDigitOrdinal :: Bool
+defaultSingleDigitOrdinal = False
 
 -- * Getting aspects of the configuration.
 
@@ -194,6 +213,12 @@ getAbbreviations [] = []
 getAbbreviations ((Abbreviation abbr):xs) = abbr:getAbbreviations xs
 getAbbreviations (_:xs) = getAbbreviations xs
 
+-- | Get characters from the config which would result in a break
+-- between two tokens, but which are not supposed to.
+getNoBreaks :: [Config] -> [Char]
+getNoBreaks [] = []
+getNoBreaks ((NoBreak c):xs) = c : getNoBreaks xs
+getNoBreaks (_:xs) = getNoBreaks xs
 
 -- | Get the list of month names form config.
 getMonths :: [Config] -> [String]
@@ -207,6 +232,11 @@ abbrev1CharTokenP [] = defaultAbbrev1CharToken
 abbrev1CharTokenP ((Abbrev1CharToken b):_) = b
 abbrev1CharTokenP (_:xs) = abbrev1CharTokenP xs
 
+-- | Test if one digit numbers are read as ordinals.
+singleDigitOrdinalP :: [Config] -> Bool
+singleDigitOrdinalP [] = defaultSingleDigitOrdinal
+singleDigitOrdinalP ((SingleDigitOrdinal b):_) = b
+singleDigitOrdinalP (_:xs) = singleDigitOrdinalP xs
 
 
 -- * Setters for aspects of the configuration.
@@ -252,7 +282,9 @@ parseConfig =
   pcDroppedTreeSimple <+>
   pcLinebreak <+>
   pcHyphen <+>
+  pcNoBreak <+>
   pcAbbrev1CharToken <+>
+  pcSingleDigitOrdinal <+>
   pcMonth <+>
   pcTcfTextCorpusNamespace <+>
   pcTcfIdBase <+>
@@ -292,6 +324,13 @@ pcHyphen =
   getAttrValue0 "char" >>>
   arr (Hyphen . head)
 
+pcNoBreak :: (ArrowXml a) => a XmlTree Config
+pcNoBreak =
+  hasName "tokenizer" >>> getChildren >>>
+  hasName "noBreak" >>>
+  getAttrValue0 "char" >>>
+  arr (NoBreak . head)
+
 pcMonth :: IOSArrow XmlTree Config
 pcMonth =
   hasName "tokenizer" >>> getChildren >>>
@@ -305,6 +344,13 @@ pcAbbrev1CharToken =
   hasName "abbrev1Char" >>>
   getAttrValue0 "abbrev" >>>
   arr (Abbrev1CharToken . (== "True"))
+
+pcSingleDigitOrdinal :: (ArrowXml a) => a XmlTree Config
+pcSingleDigitOrdinal =
+  hasName "tokenizer" >>> getChildren >>>
+  hasName "singleDigitOrdinal" >>>
+  getAttrValue0 "ordinal" >>>
+  arr (SingleDigitOrdinal . (== "True"))
 
 pcTcfTextCorpusNamespace :: IOSArrow XmlTree Config
 pcTcfTextCorpusNamespace =
