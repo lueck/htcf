@@ -3,6 +3,10 @@ module HTCF.LayerTypeDefs
   ( Text (..)
   , Token (..)
   , TokenID
+  , getToken
+  , getTokenID
+  , getTokenStartTextPos
+  , getTokenEndTextPos
   , Sentence (..)
   , SentenceID
   , Lemma (..)
@@ -38,6 +42,18 @@ data Token = Token
                                       -- position in relation to XML
                                       -- source file
     } deriving (Show, Eq)
+
+getToken :: Token -> String
+getToken (Token t _ _ _ _ _) = t
+
+getTokenID :: Token -> Maybe TokenID
+getTokenID (Token _ idd _ _ _ _) = idd
+
+getTokenStartTextPos :: Token -> Maybe TextPosition
+getTokenStartTextPos (Token _ _ s _ _ _) = s
+
+getTokenEndTextPos :: Token -> Maybe TextPosition
+getTokenEndTextPos (Token _ _ _ e _ _) = e
 
 -- * Sentence
 

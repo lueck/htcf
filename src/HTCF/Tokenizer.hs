@@ -1,7 +1,6 @@
 module HTCF.Tokenizer
   ( Token (..)
   , tokenize
-  , getToken
   , nthWordStart
   , dropNWords
   , isNumDay
@@ -17,9 +16,6 @@ import HTCF.LayerTypeDefs
 import HTCF.Position
 import HTCF.TcfParserTypeDefs
 import HTCF.ConfigParser
-
-getToken :: Token -> String
-getToken (Token t _ _ _ _ _) = t
 
 isNumDay :: String -> Bool
 isNumDay (d:'.':[]) = isDigit d
