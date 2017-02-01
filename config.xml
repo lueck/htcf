@@ -16,13 +16,13 @@
 	namespace="http://www.tei-c.org/ns/1.0"
 	name="l"/>
     <hyphen char="¬"/><!-- DTA's hyphenation character on linebreak -->
+    <!--hyphen char="-"/-->
     <noBreak char="-"/>
     <noBreak char="–"/><!-- 0x2013 -->
     <preNumAbbrev
 	string="Bar"/>
     <preNumAbbrev
 	string="Dan"/>
-    <!--hyphen char="-"/-->
     <abbrev1Char abbrev="True"/>
     <singleDigitOrdinal ordinal="True"/>
     <month>Januar</month>
@@ -44,7 +44,9 @@
     <month>December</month>
   </tokenizer>
   <tcf>
-    <tcfNamespace
+    <tcfRootNamespace
+	namespace="http://www.dspin.de/data"/>
+    <tcfTextCorpusNamespace
 	namespace="http://www.dspin.de/data/textcorpus"/>
     <idBase base="16"/>
     <idPrefixDelimiter delimiter="_"/>

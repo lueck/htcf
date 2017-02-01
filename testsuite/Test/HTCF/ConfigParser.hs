@@ -24,7 +24,7 @@ test_getTextRoot = do
 test_getHyphens = do
   results <- runConfigParser configFile
   assertEqual
-    "-¬"
+    "¬"
     (getHyphens results)
 
 test_getLinebreaks = do
@@ -40,11 +40,23 @@ test_getDroppedTrees = do
     (mkNsName "fw" "http://www.tei-c.org/ns/1.0")
     (getDroppedTrees results)
 
+test_getTcfRootNamespace = do
+  results <- runConfigParser configFile
+  assertEqual
+    "http://www.dspin.de/data"
+    (getTcfRootNamespace results)
+  assertEqual
+    "http://www.dspin.de/data"
+    (getTcfRootNamespace [])  
+
 test_getTcfTextCorpusNamespace = do
   results <- runConfigParser configFile
   assertEqual
     "http://www.dspin.de/data/textcorpus"
     (getTcfTextCorpusNamespace results)
+  assertEqual
+    "http://www.dspin.de/data/textcorpus"
+    (getTcfTextCorpusNamespace [])
 
 test_getTcfIdBase = do
   results <- runConfigParser configFile

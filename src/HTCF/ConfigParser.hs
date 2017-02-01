@@ -10,6 +10,7 @@ module HTCF.ConfigParser
   , getHyphens
   , getLineBreaks
   , getDroppedTrees
+  , getTcfRootNamespace
   , getTcfTextCorpusNamespace
   , getTcfIdBase
   , setTcfIdBase
@@ -23,6 +24,7 @@ module HTCF.ConfigParser
   , abbrev1CharTokenP
   , singleDigitOrdinalP
   , getNoBreaks
+  , defaultTcfRootNamespace
   , defaultTcfTextCorpusNamespace
   , defaultTcfIdBase
   , defaultTcfIdPrefixDelimiter
@@ -60,6 +62,8 @@ data Config =
                                         -- resulting in a control sign
                                         -- for the tokenizer
   | Hyphen Char                         -- ^ hyphen character for tokenizer
+  | TcfRootNamespace String             -- ^ the namespace of the root
+                                        -- node a TCF file
   | TcfTextCorpusNamespace String       -- ^ the namespace of the
                                         -- TextCorpus tag of a TCF
                                         -- file
@@ -101,6 +105,11 @@ data Config =
 -- element.
 defaultTextRoot :: QName
 defaultTextRoot = mkNsName "text" "http://www.tei-c.org/ns/1.0"
+
+-- | Default value for the root node <D-Spin> of a TCF file:
+-- http://www.dspin.de/data
+defaultTcfRootNamespace :: String
+defaultTcfRootNamespace = "http://www.dspin.de/data"
 
 -- | Default value for the <TextCorpus> element of a TCF file:
 -- http://www.dspin.de/data/textcorpus
@@ -168,6 +177,14 @@ getDroppedTrees :: [Config] -> [QName]
 getDroppedTrees [] = []
 getDroppedTrees ((DroppedTree qn):xs) = qn : getDroppedTrees xs
 getDroppedTrees (_:xs) = getDroppedTrees xs
+
+-- | Get the namespace of the root node a TCF file. If none is given
+-- in the config file, this defaults to
+-- 'defaultTcfRootNamespace'.
+getTcfRootNamespace :: [Config] -> String
+getTcfRootNamespace [] = defaultTcfRootNamespace
+getTcfRootNamespace ((TcfRootNamespace ns):_) = ns
+getTcfRootNamespace (_:xs) = getTcfRootNamespace xs
 
 -- | Get the namespace of the text corpus element of a TCF file. If
 -- none is given in the config file, this defaults to
@@ -286,6 +303,7 @@ parseConfig =
   pcAbbrev1CharToken <+>
   pcSingleDigitOrdinal <+>
   pcMonth <+>
+  pcTcfRootNamespace <+>
   pcTcfTextCorpusNamespace <+>
   pcTcfIdBase <+>
   pcTcfIdPrefixDelimiter <+>
@@ -352,10 +370,17 @@ pcSingleDigitOrdinal =
   getAttrValue0 "ordinal" >>>
   arr (SingleDigitOrdinal . (== "True"))
 
+pcTcfRootNamespace :: (ArrowXml a) => a XmlTree Config
+pcTcfRootNamespace =
+  hasName "tcf" >>> getChildren >>>
+  hasName "tcfRootNamespace" >>>
+  getAttrValue "namespace" >>>
+  arr (TcfRootNamespace . defaultOnNull defaultTcfRootNamespace)
+
 pcTcfTextCorpusNamespace :: IOSArrow XmlTree Config
 pcTcfTextCorpusNamespace =
   hasName "tcf" >>> getChildren >>>
-  hasName "tcfNamespace" >>>
+  hasName "tcfTextCorpusNamespace" >>>
   getAttrValue "namespace" >>>
   arr (TcfTextCorpusNamespace . defaultOnNull defaultTcfTextCorpusNamespace)
 
