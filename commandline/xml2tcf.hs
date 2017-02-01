@@ -55,9 +55,24 @@ run (Convert configFile abbrevFile outputMethod outputStructure fName) = do
                   hasQName (getTextRoot config) >>>
                   multi (parserArrow config)
                  )
-  rc <- runX (root
-              []
-              [(writeTokenLayer config $ tokenize (addAbbreviations (lines abbrevs) config) $ propagateOffsets parsed)] >>>
+  rc <- runX (root  -- make a root node containing the XML-Decl, PIs and the xml root element
+              []    -- its attribute nodes
+              [ -- its child nodes
+                (mkqelem  -- make the xml root element
+                 (mkQName "tcf" "D-Spin" $ getTcfRootNamespace config)
+                 [(sattr "xmlns:tcf" $ getTcfRootNamespace config),
+                  (sattr "xmlns" $ getTcfTextCorpusNamespace config)] -- attributes
+                 [-- its child nodes
+                   (mkqelem
+                    (mkQName "" "textCorpus" $ getTcfTextCorpusNamespace config)
+                    [] -- attributes
+                    [ -- its child nodes
+                      (writeTextLayer config $ concatMap getTcfText parsed),
+                      (writeTokenLayer config $
+                       tokenize (addAbbreviations (lines abbrevs) config) $
+                       propagateOffsets parsed)])])] >>>
+              {-attachNsEnv (toNsEnv [("tcf", getTcfRootNamespace config),
+                                    ("", getTcfTextCorpusNamespace config)]) >>> -- FIXME-}
               writeDocumentToString [withIndent yes])
   putStrLn $ concat rc
   where

@@ -6,6 +6,7 @@ module HTCF.TcfParserTypeDefs
   , tcfTextLen
   , dupWithNewTextPos
   , propagateOffsets
+  , getTcfText
   , serialize
   )
   where
@@ -65,6 +66,10 @@ propagateOffsets xs = propagateOffsets' 0 xs
     -- FIXME: Do we really need this incrementation? Verification needed!
     incValue (TcfText _ _ _) = 1
     incValue _ = 0
+
+getTcfText :: TcfElement -> String
+getTcfText (TcfText t _ _) = t
+getTcfText _ = ""
 
 serialize :: TcfElement -> String
 serialize (TcfText t _ _) = t

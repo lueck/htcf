@@ -1,5 +1,6 @@
 module HTCF.WriteTcf
   ( writeTokenLayer
+  , writeTextLayer
   , runTcfWriter
   ) where
 
@@ -18,6 +19,17 @@ runTcfWriter cfg toks = do
               writeDocumentToString [withIndent yes])
   return $ concat rc
 
+-- | Arrow for writing the text layer.
+writeTextLayer :: (ArrowXml a) => [Config] -- ^ the config
+               -> String                   -- ^ the text as string
+               -> a XmlTree XmlTree        -- ^ returns an xml arrow
+writeTextLayer cfg t =
+  (mkqelem
+   (mkNsName "text" ns) -- qname <tcf:text>
+   [] -- attribute nodes
+   [txt t]) -- child nodes: a single text node containing the text
+  where
+    ns = getTcfTextCorpusNamespace cfg
 
 -- | Arrow for writing the token layer.
 writeTokenLayer :: (ArrowXml a) => [Config] -- ^ the config
