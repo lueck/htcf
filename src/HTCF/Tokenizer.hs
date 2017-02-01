@@ -94,15 +94,15 @@ tokenize cfg tcf = tokenize' 1 tcf
     mkToken tok idd tOffset xOffset 0 =
       (Token tok (Just idd)
          (Just tOffset)
-         (Just $ shiftTextPosition tOffset $ length tok)
+         (Just $ shiftTextPosition tOffset $ length tok - 1)
          (Just xOffset)
-         (Just $ shiftXmlPosition xOffset $ length tok))
+         (Just $ shiftXmlPosition xOffset $ length tok - 1))
     mkToken tok idd tOffset xOffset offset =
       (Token tok (Just idd)
          (Just $ shiftTextPosition tOffset offset)
-         (Just $ shiftTextPosition tOffset $ offset + length tok)
+         (Just $ shiftTextPosition tOffset $ offset + length tok - 1)
          (Just $ shiftXmlPosition xOffset offset)
-         (Just $ shiftXmlPosition xOffset $ offset + length tok))
+         (Just $ shiftXmlPosition xOffset $ offset + length tok - 1))
 
     mkText :: String         -- the old text
            -> Int            -- number of chars to drop from the old text (text node)
@@ -112,8 +112,8 @@ tokenize cfg tcf = tokenize' 1 tcf
     mkText txt n tOffset xOffset =
       (TcfText
        (drop n txt)
-       (shiftTextPosition tOffset n+1)
-       (shiftXmlPosition xOffset n+1))
+       (shiftTextPosition tOffset n)
+       (shiftXmlPosition xOffset n))
 
     -- tokenize' does all the work.
     tokenize' :: Int -- ^ token id (number)
