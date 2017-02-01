@@ -60,12 +60,8 @@ propagateOffsets xs = propagateOffsets' 0 xs
     propagateOffsets' :: TextPosition -> [TcfElement] -> [TcfElement]
     propagateOffsets' _ [] = []
     propagateOffsets' i (x:[]) = [dup x i]
-    propagateOffsets' i (x:xs) = dup x i : propagateOffsets' (i+(tcfTextLen x)+(incValue x)) xs
+    propagateOffsets' i (x:xs) = dup x i : propagateOffsets' (i+(tcfTextLen x)) xs
     dup = dupWithNewTextPos
-    -- Increment by 1 for TcfText, but 0 for others
-    -- FIXME: Do we really need this incrementation? Verification needed!
-    incValue (TcfText _ _ _) = 1
-    incValue _ = 0
 
 getTcfText :: TcfElement -> String
 getTcfText (TcfText t _ _) = t
