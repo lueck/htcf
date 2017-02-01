@@ -4,12 +4,58 @@ module Test.HTCF.Tokenizer where
 
 import Test.Framework
 import Text.XML.HXT.Core
+import Data.Maybe
 
 import HTCF.Tokenizer
 import HTCF.ConfigParser
+import HTCF.TcfParser
 import HTCF.TcfParserTypeDefs
+import HTCF.LayerTypeDefs
+
+sampleFile = "doc/examples/kant_aufklaerung_1784.TEI-P5.xml"
 
 monthsConfig = [(Month "Oktober")]
+
+-- * Testing offsets
+
+test_textOffset = do
+  parsed <- runX (readDocument [withValidate no] sampleFile >>>
+                  propagateNamespaces >>>
+                  multi (mkTcfElement [])
+                 )
+  let textLayer = concatMap getTcfText parsed
+      tokens = tokenize [] $ propagateOffsets parsed
+      tok = tokens !! 900 -- FIXME: replace with random value
+      start = fromMaybe 0 $ getTokenStartTextPos tok
+      end = fromMaybe 0 $ getTokenEndTextPos tok
+      wd = getToken tok
+  assertEqual
+    (take (end-start+1) $ drop start textLayer)
+    wd
+
+{- -- FIXME: get QuickCheck test working
+instance Arbitrary TcfElement where
+  arbitrary = oneof
+              [ TcfText <$> arbitrary <*> arbitrary <*> arbitrary
+              , TcfStructure <$> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
+              ]
+
+instance Arbitrary QName where
+  -- QName does not export a constructor
+  arbitrary = mkQName arbitrary arbitrary arbitrary
+
+prop_textOffset :: [TcfElement] -> Bool
+prop_textOffset parsed = (take (end-start+1) $ drop start textLayer) == wd
+  where
+    textLayer = concatMap getTcfText parsed
+    tokens = tokenize [] $ propagateOffsets parsed
+    tok = tokens !! 900
+    start = fromMaybe 0 $ getTokenStartTextPos tok
+    end = fromMaybe 0 $ getTokenEndTextPos tok
+    wd = getToken tok
+-}
+
+-- * Testing tokenization
 
 test_ordinaryWord = do
   assertEqual
