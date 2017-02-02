@@ -62,6 +62,7 @@ Test-Suite test-main
   build-depends:     base >=4.9 && <4.10
                    , hxt
   build-depends:     HTF >=0.10.1
+                   , QuickCheck
                    , bytestring
                    , template-haskell
   hs-source-dirs:    testsuite, src

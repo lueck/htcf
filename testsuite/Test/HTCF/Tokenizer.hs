@@ -3,6 +3,7 @@
 module Test.HTCF.Tokenizer where
 
 import Test.Framework
+import Test.QuickCheck.Monadic
 import Text.XML.HXT.Core
 import Data.Maybe
 
@@ -18,42 +19,61 @@ monthsConfig = [(Month "Oktober")]
 
 -- * Testing offsets
 
-test_textOffset = do
-  parsed <- runX (readDocument [withValidate no] sampleFile >>>
-                  propagateNamespaces >>>
-                  multi (mkTcfElement [])
-                 )
-  let textLayer = concatMap getTcfText parsed
-      tokens = tokenize [] $ propagateOffsets parsed
-      tok = tokens !! 900 -- FIXME: replace with random value
-      start = fromMaybe 0 $ getTokenStartTextPos tok
-      end = fromMaybe 0 $ getTokenEndTextPos tok
-      wd = getToken tok
-  assertEqual
-    (take (end-start+1) $ drop start textLayer)
-    wd
+-- | helper function
+parse :: FilePath -> IO [TcfElement]
+parse fName = runX (readDocument [withValidate no] fName >>>
+                    propagateNamespaces >>>
+                    multi (mkTcfElement [])
+                   )
 
-{- -- FIXME: get QuickCheck test working
+-- | Testing offsets of token with randomized number
+prop_textOffset :: Positive Int -> Property
+prop_textOffset (Positive i) = monadicIO $ do
+  parsed <- run (parse sampleFile)
+  let
+    textLayer = concatMap getTcfText parsed
+    tokens = tokenize [] $ propagateOffsets parsed
+    tok = tokens !! (min i $ length tokens) -- randomized token number
+    start = fromMaybe 0 $ getTokenStartTextPos tok
+    end = fromMaybe 0 $ getTokenEndTextPos tok
+    wd = getToken tok
+  assert ((take (end-start+1) $ drop start textLayer) == wd)
+
+{- -- FIXME: get QuickCheck test working with arbitrary input
 instance Arbitrary TcfElement where
   arbitrary = oneof
               [ TcfText <$> arbitrary <*> arbitrary <*> arbitrary
               , TcfStructure <$> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
+              -- TcfLineBreak
               ]
 
 instance Arbitrary QName where
   -- QName does not export a constructor
   arbitrary = mkQName arbitrary arbitrary arbitrary
 
-prop_textOffset :: [TcfElement] -> Bool
-prop_textOffset parsed = (take (end-start+1) $ drop start textLayer) == wd
+prop_textOffset :: Positive Int -> [TcfElement] -> Bool
+prop_textOffset (Positive i) parsed = (take (end-start+1) $ drop start textLayer) == wd
   where
     textLayer = concatMap getTcfText parsed
     tokens = tokenize [] $ propagateOffsets parsed
-    tok = tokens !! 900
+    tok = tokens !! (min i $ length tokens)
     start = fromMaybe 0 $ getTokenStartTextPos tok
     end = fromMaybe 0 $ getTokenEndTextPos tok
     wd = getToken tok
 -}
+
+-- | Testing with a fixed token number
+test_textOffsetFixed = do
+  parsed <- parse sampleFile
+  let textLayer = concatMap getTcfText parsed
+      tokens = tokenize [] $ propagateOffsets parsed
+      tok = tokens !! 2900 -- FIXME: replace with random value
+      start = fromMaybe 0 $ getTokenStartTextPos tok
+      end = fromMaybe 0 $ getTokenEndTextPos tok
+      wd = getToken tok
+  assertEqual
+    (take (end-start+1) $ drop start textLayer)
+    wd
 
 -- * Testing tokenization
 
