@@ -33,7 +33,7 @@ prop_textOffset (Positive i) = monadicIO $ do
   let
     textLayer = concatMap getTcfText parsed
     tokens = tokenize [] $ propagateOffsets parsed
-    tok = tokens !! (min i $ length tokens) -- randomized token number
+    tok = tokens !! (mod i $ length tokens) -- randomized token number
     start = fromMaybe 0 $ getTokenStartTextPos tok
     end = fromMaybe 0 $ getTokenEndTextPos tok
     wd = getToken tok
