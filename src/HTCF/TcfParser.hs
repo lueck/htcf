@@ -20,13 +20,13 @@ import HTCF.ArrowXml
 -- tokenizer information.
 --
 -- Usage: @multi mkTcfElement@
-mkTcfElement :: [Config] -> IOSArrow XmlTree TcfElement
+mkTcfElement :: (ArrowXml a) => [Config] -> a XmlTree TcfElement
 mkTcfElement cfg =
   (isElem >>> mkTcfStructure) <+>
   (isText >>> mkTcfText) <+>
   (isElem >>> mkTcfLineBreak cfg)
 
-mkTcfElementButStructure :: [Config] -> IOSArrow XmlTree TcfElement
+mkTcfElementButStructure :: (ArrowXml a) => [Config] -> a XmlTree TcfElement
 mkTcfElementButStructure cfg =
   (isText >>> mkTcfText) <+>
   (isElem >>> mkTcfLineBreak cfg)
@@ -34,7 +34,7 @@ mkTcfElementButStructure cfg =
 -- | An arrow for parsing text nodes into the text layer
 --
 -- Usage: @isText >>> mkTcfText@
-mkTcfText :: IOSArrow XmlTree TcfElement
+mkTcfText :: (ArrowXml a) => a XmlTree TcfElement
 mkTcfText =
   getText &&&
   arr (const 0) &&&
@@ -44,7 +44,7 @@ mkTcfText =
 -- | An arrow for parsing tags into the structure layer
 --
 -- Usage: @isElem >>> mkTcfStructure@
-mkTcfStructure :: IOSArrow XmlTree TcfElement
+mkTcfStructure :: (ArrowXml a) => a XmlTree TcfElement
 mkTcfStructure =
   getQName &&&
   arr (const 0) &&&

@@ -22,17 +22,17 @@ runTcfReader cfg fname = do
   return layers
 
 
-parseTcfLayers :: [Config] -> IOSArrow XmlTree {- FIXME: -}Token
+parseTcfLayers :: (ArrowXml a) => [Config] -> a XmlTree {- FIXME: -}Token
 parseTcfLayers cfg =
   parseTokens cfg
 
-parseTokens :: [Config] -> IOSArrow XmlTree Token
+parseTokens :: (ArrowXml a) => [Config] -> a XmlTree Token
 parseTokens cfg =
   isElem >>> hasQName (mkNsName "tokens" $ getTcfTextCorpusNamespace cfg) >>>
   getChildren >>>
   isElem >>> parseToken cfg
 
-parseToken :: [Config] -> IOSArrow XmlTree Token
+parseToken :: (ArrowXml a) => [Config] -> a XmlTree Token
 parseToken cfg =
   hasQName (mkNsName "token" $ getTcfTextCorpusNamespace cfg) >>>
   (getChildren >>> getText) &&&
