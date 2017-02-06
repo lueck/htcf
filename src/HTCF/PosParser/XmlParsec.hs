@@ -601,13 +601,16 @@ parseXmlContent
 -- a more general version of 'parseXmlContent'.
 -- The parser to be used and the context are extra parameter
 
-parseXmlText            :: SimpleXParser XmlTrees -> XPState () -> String -> XmlTree -> XmlTrees
+parseXmlText            :: XParser s XmlTrees -> XPState s -> String -> XmlTree -> XmlTrees
 parseXmlText p s0 loc   = parseXmlFromString p s0 loc . xshow . (:[])
 
 parseXmlDocument        :: String -> String -> XmlTrees
 parseXmlDocument        = parseXmlFromString document' (withNormNewline ())
 
-parseXmlFromString      :: XParser () XmlTrees -> XPState () -> String -> String -> XmlTrees
+parseXmlDocumentWithUserState :: XPState s -> String -> String -> XmlTrees
+parseXmlDocumentWithUserState s0 = parseXmlFromString document' (withNormNewline s0)
+
+parseXmlFromString      :: XParser s XmlTrees -> XPState s -> String -> String -> XmlTrees
 parseXmlFromString parser s0 loc
     = either ((:[]) . mkError' c_err . (++ "\n") . show) id
       . runParser parser s0 loc
