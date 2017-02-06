@@ -13,6 +13,8 @@ import HTCF.Tokenizer
 import HTCF.ArrowXml
 import HTCF.WriteTcf
 
+import qualified HTCF.PosParser.ReadDocument as RD (readDocument)
+
 data Convert =
   Convert { configFile :: Maybe String
           , abbrevFile :: Maybe FilePath
@@ -49,7 +51,7 @@ run :: Convert -> IO ()
 run (Convert configFile abbrevFile outputMethod outputStructure fName) = do
   config <- runConfigParser $ fromMaybe "config.xml" configFile
   abbrevs <- readFile $ fromMaybe "abbrevs.txt" abbrevFile
-  parsed <- runX (readDocument [withValidate no] fName >>>
+  parsed <- runX (RD.readDocument [withValidate no] fName >>>
                   propagateNamespaces >>>
                   stripQNames (getDroppedTrees config) //>
                   hasQName (getTextRoot config) >>>

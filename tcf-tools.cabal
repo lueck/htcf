@@ -27,11 +27,17 @@ library
                    , HTCF.LayerTypeDefs
                    , HTCF.ReadTcf
                    , HTCF.WriteTcf
+                   , HTCF.PosParser.XmlParsec
+                   , HTCF.PosParser.ParserInterface
+                   , HTCF.PosParser.ProcessDocument
+                   , HTCF.PosParser.ReadDocument
   -- other-modules:       
   -- other-extensions:    
   build-depends:     base >=4.9 && <4.10
                    , bytestring >= 0.10.8.1
+                   , containers >= 0.5.7.1
                    , hxt
+                   , parsec >= 3.1.11
   hs-source-dirs:    src
   default-language:  Haskell2010
 
@@ -39,7 +45,9 @@ library
 Executable xml2tcf
   main-is:           xml2tcf.hs
   build-depends:     base >=4.9 && <4.10
+                   , containers >= 0.5.7.1
                    , hxt
+                   , parsec >= 3.1.11
   build-depends:     tcf-tools
                    , optparse-applicative >= 0.12.1.0
   hs-source-dirs:    commandline
@@ -49,7 +57,9 @@ Executable xml2tcf
 Executable readtcf
   main-is:           readtcf.hs
   build-depends:     base >=4.9 && <4.10
+                   , containers >= 0.5.7.1
                    , hxt
+                   , parsec >= 3.1.11
   build-depends:     tcf-tools
                    , optparse-applicative >= 0.12.1.0
   hs-source-dirs:    commandline
@@ -60,7 +70,9 @@ Test-Suite test-main
   type:              exitcode-stdio-1.0
   main-is:           TestMain.hs
   build-depends:     base >=4.9 && <4.10
+                   , containers >= 0.5.7.1
                    , hxt
+                   , parsec >= 3.1.11
   build-depends:     HTF >=0.10.1
                    , QuickCheck
                    , bytestring
