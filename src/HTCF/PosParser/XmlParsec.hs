@@ -607,7 +607,7 @@ parseXmlText p s0 loc   = parseXmlFromString p s0 loc . xshow . (:[])
 parseXmlDocument        :: String -> String -> XmlTrees
 parseXmlDocument        = parseXmlFromString document' (withNormNewline ())
 
-parseXmlFromString      :: SimpleXParser XmlTrees -> XPState () -> String -> String -> XmlTrees
+parseXmlFromString      :: XParser () XmlTrees -> XPState () -> String -> String -> XmlTrees
 parseXmlFromString parser s0 loc
     = either ((:[]) . mkError' c_err . (++ "\n") . show) id
       . runParser parser s0 loc
