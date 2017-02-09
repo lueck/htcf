@@ -43,6 +43,8 @@ prop_textOffset (Positive i) = monadicIO $ do
   let
     textLayer = concatMap getTcfText parsed
     tokens = tokenize [] $ propagateOffsets parsed
+    -- FIXME: broken due to division by zero: next line. -- So no
+    -- tokens! Why??
     tok = tokens !! (mod i $ length tokens) -- randomized token number
     start = fromMaybe 0 $ getTokenStartTextPos tok
     end = fromMaybe 0 $ getTokenEndTextPos tok
