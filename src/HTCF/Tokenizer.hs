@@ -84,26 +84,26 @@ tokenize cfg tcf = tokenize' 1 tcf
     mkToken :: String -- the token
             -> Int -- the token ID
             -> TextPosition -- the position in text layer
-            -> XmlPosition -- the position in source
+            -> Maybe XmlPosition -- the position in source
             -> Int -- offset in current string (text node)
             -> Token
     mkToken tok idd tOffset xOffset 0 =
       (Token tok (Just idd)
          (Just tOffset)
          (Just $ shiftTextPosition tOffset $ length tok - 1)
-         (Just xOffset)
-         (Just $ shiftXmlPosition xOffset $ length tok - 1))
+         xOffset
+         (shiftXmlPosition xOffset $ length tok - 1))
     mkToken tok idd tOffset xOffset offset =
       (Token tok (Just idd)
          (Just $ shiftTextPosition tOffset offset)
          (Just $ shiftTextPosition tOffset $ offset + length tok - 1)
-         (Just $ shiftXmlPosition xOffset offset)
-         (Just $ shiftXmlPosition xOffset $ offset + length tok - 1))
+         (shiftXmlPosition xOffset offset)
+         (shiftXmlPosition xOffset $ offset + length tok - 1))
 
     mkText :: String         -- the old text
            -> Int            -- number of chars to drop from the old text (text node)
            -> TextPosition   -- old position in text layer
-           -> XmlPosition    -- old position in xml source
+           -> Maybe XmlPosition    -- old position in xml source
            -> TcfElement
     mkText txt n tOffset xOffset =
       (TcfText
@@ -137,7 +137,7 @@ tokenize cfg tcf = tokenize' 1 tcf
       = tokenize' i ((TcfText
                       (t1 ++ take letters (t2:t2s))
                       tOffset1
-                      {-sOffset1 FIXME-} 666)
+                      sOffset1)
                      :
                      (TcfText
                       (drop letters (t2:t2s))

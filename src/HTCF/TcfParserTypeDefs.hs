@@ -19,7 +19,7 @@ data TcfElement =
   TcfText                          -- ^ constituent of text layer
   { text :: String                 -- ^ the text
   , textOffset :: TextPosition     -- ^ offset in text layer
-  , srcOffset :: XmlPosition       -- ^ offset in source
+  , srcOffset :: Maybe XmlPosition       -- ^ offset in source
   }
   | TcfStructure                   -- ^ constituent of structure layer
   { qName :: QName                 -- ^ qualified name of tag

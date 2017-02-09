@@ -58,13 +58,30 @@ import qualified Text.XML.HXT.Parser.XmlDTDTokenParser as XD
 import qualified Text.XML.HXT.Parser.XmlTokenParser    as XT
 
 import qualified Text.XML.HXT.Parser.XmlParsec as XP
+import qualified Text.XML.HXT.DOM.XmlNode as XN
 
 import           Control.FlatSeq
 
 import           Data.Char                             (toLower)
 import           Data.Maybe
 
+import Text.Parsec (SourcePos)
+import Data.Tree.Class (mkTree)
+
+import HTCF.Position (mkPositionNode, mkPositionAttrs)
+
 -- import Debug.Trace
+
+mkPosText :: SourcePos -> SourcePos -> String -> XmlTree
+mkPosText start end t =
+  mkTree (XN.mkText t) [(mkPositionNode start end)]
+
+mkPosElement :: QName -> SourcePos -> SourcePos -> XmlTrees -> XmlTrees -> XmlTree
+mkPosElement n start end al cl =
+  id $!! XN.mkElement n (al++(mkPositionAttrs start end)) cl
+
+mkPosCharRef :: Int -> SourcePos -> SourcePos -> XmlTree
+mkPosCharRef i start end = mkTree (XN.mkCharRef i) [(mkPositionNode start end)]
 
 -- ------------------------------------------------------------
 --
@@ -72,13 +89,42 @@ import           Data.Maybe
 
 charData                :: XParser s XmlTrees
 charData
-    = many (charData' <|> XT.referenceT)
+    = many (charData' <|> referenceT)
 
-charData'               :: XParser s XmlTree
-charData'
-    =  do
-       t <- XT.allBut1 many1 (\ c -> not (c `elem` "<&")) "]]>"
-       return (mkText' t)
+charData' :: XParser s XmlTree
+charData' =  do
+  start <- getPosition
+  t <- XT.allBut1 many1 (\ c -> not (c `elem` "<&")) "]]>"
+  end <- getPosition
+  return (mkPosText start end t)
+
+
+-- ------------------------------------------------------------
+--
+-- Character and Entity References (4.1)
+
+referenceT :: XParser s XmlTree
+referenceT =
+  charRefT
+  <|>
+  entityRefT
+
+charRefT :: XParser s XmlTree
+charRefT = do
+  start <- getPosition
+  i <- XT.charRef
+  end <- getPosition
+  return (mkPosCharRef i start end)
+
+entityRefT :: XParser s XmlTree
+entityRefT = do
+  start <- getPosition
+  n <- XT.entityRefT
+  end <- getPosition
+  return $ ref n start end
+  where
+    ref (XN.NTree (XEntityRef n) _) s e = mkTree (XN.mkEntityRef n) [(mkPositionNode s e)]
+    ref (XN.NTree (XCharRef i) _) s e = mkPosCharRef i s e
 
 -- ------------------------------------------------------------
 --
@@ -322,11 +368,12 @@ element
       >>
       element'
 
-element'         :: XParser s XmlTree
+element' :: XParser s XmlTree
 element'
-    = ( do
-        e <- elementStart
-        rwnf e `seq` elementRest e              -- evaluate name and attribute list before parsing contents
+  = ( do
+        start <- getPosition
+        e@(n, al) <- elementStart
+        rwnf e `seq` elementRest (n, al, start)           -- evaluate name and attribute list before parsing contents
       ) <?> "element"
 
 
@@ -357,18 +404,20 @@ elementStart
                           else return (a1 : al)
                       )
 
-elementRest     :: (QName, XmlTrees) -> XParser s XmlTree
-elementRest (n, al)
+elementRest     :: (QName, XmlTrees, SourcePos) -> XParser s XmlTree
+elementRest (n, al, start)
     = ( do
         XT.checkString "/>"
-        return $ mkElement' n al []
+        end <- getPosition
+        return $ mkPosElement n start end al []
       )
       <|>
       ( do
         XT.gt
         c <- content
         eTag n
-        return $ mkElement' n al c
+        end <- getPosition
+        return $ mkPosElement n start end al c
       )
       <?> "proper attribute list followed by \"/>\" or \">\""
 
