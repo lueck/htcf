@@ -68,7 +68,9 @@ getTextXmlPosition =
   &&& getUserState
   >>> arr2 getXmlPos
   where
-    getXmlPos ((Just sL), (Just sC), _, _) lineOffsets = Just ((lineOffsets !! (sL-1)) + sC)
+    getXmlPos ((Just sL), (Just sC), _, _) lineOffsets
+      | (sL-1) <= length lineOffsets = Just ((lineOffsets !! (sL-1)) + sC)
+      | otherwise = Nothing
     getXmlPos _ _ = Nothing
 
 getPosAttrs :: (ArrowXml a) => a XmlTree ((Maybe Int), (Maybe Int), (Maybe Int), (Maybe Int))
