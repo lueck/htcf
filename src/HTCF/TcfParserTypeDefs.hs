@@ -7,6 +7,8 @@ module HTCF.TcfParserTypeDefs
   , dupWithNewTextPos
   , propagateOffsets
   , getTcfText
+  , getTextOffset
+  , getSrcOffset
   , serialize
   )
   where
@@ -19,14 +21,15 @@ data TcfElement =
   TcfText                          -- ^ constituent of text layer
   { text :: String                 -- ^ the text
   , textOffset :: TextPosition     -- ^ offset in text layer
-  , srcOffset :: Maybe XmlPosition       -- ^ offset in source
+  , srcOffset :: Maybe XmlPosition -- ^ offset in source
+  --, srcCharLengths :: Maybe (Int, Int)
   }
   | TcfStructure                   -- ^ constituent of structure layer
   { qName :: QName                 -- ^ qualified name of tag
   , textStart :: TextPosition      -- ^ start position in text layer
   , textEnd :: TextPosition        -- ^ end position in text layer
-  , srcStart :: XmlPosition        -- ^ start position in source
-  , srcEnd :: XmlPosition          -- ^ end position in end
+  , srcStart :: Maybe XmlPosition        -- ^ start position in source
+  , srcEnd :: Maybe XmlPosition          -- ^ end position in end
   }
   | TcfLineBreak                   -- ^ control sign for the tokenizer
   deriving (Show)
@@ -66,6 +69,16 @@ propagateOffsets xs = propagateOffsets' 0 xs
 getTcfText :: TcfElement -> String
 getTcfText (TcfText t _ _) = t
 getTcfText _ = ""
+
+getTextOffset :: TcfElement -> TextPosition
+getTextOffset (TcfText _ p _) = p
+getTextOffset (TcfStructure _ p _ _ _) = p
+getTextOffset _ = 0
+
+getSrcOffset :: TcfElement -> Maybe XmlPosition
+getSrcOffset (TcfText _ _ p) = p
+getSrcOffset (TcfStructure _ _ _ p _) = p
+getSrcOffset _ = Nothing
 
 serialize :: TcfElement -> String
 serialize (TcfText t _ _) = t

@@ -23,6 +23,10 @@ mkTcfTextSample :: String -> Int -> Int -> TcfElement
 mkTcfTextSample t tOffset xOffset =
   (TcfText t tOffset (Just xOffset))
 
+mkTcfStructureSample :: QName -> Int -> Int -> Int -> Int -> TcfElement
+mkTcfStructureSample qName tS tE xS xE =
+  (TcfStructure qName tS tE (Just xS) (Just xE))
+
 -- * Testing offsets
 
 -- | helper function
@@ -120,7 +124,7 @@ test_continuingWordOverStruct = do
     (map getToken (tokenize [] parsed))
   where
     parsed = [(mkTcfTextSample "Hal" 1 1),
-              (TcfStructure (mkNsName "b" "http://www.w3.org/1999/xhtml") 4 10 4 16),
+              (mkTcfStructureSample (mkNsName "b" "http://www.w3.org/1999/xhtml") 4 10 4 16),
               (mkTcfTextSample "lo Welt" 4 7)]
 
 test_hyphenCase1 = do
@@ -170,7 +174,7 @@ test_hyphenCase2WithWhiteSpaceContinued = do
     parsed = [(mkTcfTextSample "Hal-" 1 1),
               (TcfLineBreak),
               (mkTcfTextSample "\n\tl" 7 12),
-              (TcfStructure (mkNsName "b" "http://www.w3.org/1999/xhtml") 11 13 11 16), 
+              (mkTcfStructureSample (mkNsName "b" "http://www.w3.org/1999/xhtml") 11 13 11 16), 
               (mkTcfTextSample "o Welt" 4 7)]
 -}
 

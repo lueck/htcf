@@ -11,8 +11,8 @@ type TextPosition = Int
 
 type XmlPosition = Int
 
-getXmlPosition :: XN.NTree XNode -> (XmlPosition, XmlPosition)
-getXmlPosition _ = (0, 0)
+getXmlPosition :: XN.NTree XNode -> (Maybe XmlPosition, Maybe XmlPosition)
+getXmlPosition _ = (Just 0, Just 0)
 
 shiftTextPosition :: Int -> TextPosition -> TextPosition
 shiftTextPosition i pos = pos + i
