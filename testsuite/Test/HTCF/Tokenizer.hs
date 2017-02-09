@@ -27,14 +27,11 @@ mkTcfTextSample t tOffset xOffset =
 
 -- | helper function
 parse :: FilePath -> IO [TcfElement]
-parse fName = do
-  lineOffsets <- runLineOffsetParser fName
-  parsed <- runXIOState (initialState lineOffsets)
-            (readDocument [withValidate no] fName >>>
-             propagateNamespaces >>>
-             multi (mkTcfElement [])
-            )
-  return parsed
+parse fName = runXIOState (initialState [])
+              (readDocument [withValidate no] fName >>>
+               propagateNamespaces >>>
+               multi (mkTcfElement [])
+              )
 
 -- | Testing offsets of token with randomized number
 prop_textOffset :: Positive Int -> Property
@@ -43,8 +40,6 @@ prop_textOffset (Positive i) = monadicIO $ do
   let
     textLayer = concatMap getTcfText parsed
     tokens = tokenize [] $ propagateOffsets parsed
-    -- FIXME: broken due to division by zero: next line. -- So no
-    -- tokens! Why??
     tok = tokens !! (mod i $ length tokens) -- randomized token number
     start = fromMaybe 0 $ getTokenStartTextPos tok
     end = fromMaybe 0 $ getTokenEndTextPos tok
@@ -74,12 +69,13 @@ prop_textOffset (Positive i) parsed = (take (end-start+1) $ drop start textLayer
     wd = getToken tok
 -}
 
--- | Testing with a fixed token number
+-- | Testing with a fixed token number. This indicates, that we have
+-- not systematically lost any tokens.
 test_textOffsetFixed = do
   parsed <- parse sampleFile
   let textLayer = concatMap getTcfText parsed
       tokens = tokenize [] $ propagateOffsets parsed
-      tok = tokens !! 2900 -- FIXME: replace with random value
+      tok = tokens !! 3700
       start = fromMaybe 0 $ getTokenStartTextPos tok
       end = fromMaybe 0 $ getTokenEndTextPos tok
       wd = getToken tok
