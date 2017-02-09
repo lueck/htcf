@@ -11,9 +11,6 @@ type TextPosition = Int
 
 type XmlPosition = Int
 
-getXmlPosition :: XN.NTree XNode -> (Maybe XmlPosition, Maybe XmlPosition)
-getXmlPosition _ = (Just 0, Just 0)
-
 shiftTextPosition :: Int -> TextPosition -> TextPosition
 shiftTextPosition i pos = pos + i
 
@@ -62,16 +59,21 @@ mkPositionNode start end =
 -- * Arrows for retrieving the position
 
 --getTextXmlPosition' :: (ArrowXml a) => a XmlTree (Maybe XmlPosition)
-getTextXmlPosition :: IOSLA (XIOState [Int]) XmlTree (Maybe XmlPosition)
-getTextXmlPosition =
-  getChildren >>> isPi >>> hasQName (mkNsName posPiName posNamespace) >>> getPosAttrs
-  &&& getUserState
-  >>> arr2 getXmlPos
+getXmlPosition :: IOSLA (XIOState [Int]) XmlTree ((Maybe XmlPosition), (Maybe XmlPosition))
+getXmlPosition =
+  -- get PI with position attributes (XText, XCharRef)
+  (getChildren >>> isPi >>> hasQName (mkNsName posPiName posNamespace))
+  -- or elese get the position from the attributes of node itself
+  -- (XNode, XPi)
+  `orElse` this >>>
+  getPosAttrs &&& getUserState >>> -- pass attributes and user state
+  arr2 getXmlPos
   where
-    getXmlPos ((Just sL), (Just sC), _, _) lineOffsets
-      | (sL-1) <= length lineOffsets = Just ((lineOffsets !! (sL-1)) + sC)
-      | otherwise = Nothing
-    getXmlPos _ _ = Nothing
+    getXmlPos ((Just sL), (Just sC), (Just eL), (Just eC)) lineOffsets
+      | (eL-1) <= length lineOffsets = ( (Just ((lineOffsets !! (sL-1)) + sC))
+                                       , (Just ((lineOffsets !! (eL-1)) + eC)))
+      | otherwise = (Nothing, Nothing)
+    getXmlPos _ _ = (Nothing, Nothing)
 
 getPosAttrs :: (ArrowXml a) => a XmlTree ((Maybe Int), (Maybe Int), (Maybe Int), (Maybe Int))
 getPosAttrs =
