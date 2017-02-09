@@ -3,6 +3,7 @@ import System.IO
 import Options.Applicative
 import Data.Monoid ((<>))
 import Text.XML.HXT.Core
+import Text.XML.HXT.Arrow.XmlState.RunIOStateArrow (runXIOState, initialState)
 import Data.Maybe
 
 import HTCF.ConfigParser
@@ -12,6 +13,7 @@ import HTCF.LayerTypeDefs
 import HTCF.Tokenizer
 import HTCF.ArrowXml
 import HTCF.WriteTcf
+import HTCF.LineOffsets
 
 import qualified HTCF.PosParser.ReadDocument as RD (readDocument)
 
@@ -51,12 +53,14 @@ run :: Convert -> IO ()
 run (Convert configFile abbrevFile outputMethod outputStructure fName) = do
   config <- runConfigParser $ fromMaybe "config.xml" configFile
   abbrevs <- readFile $ fromMaybe "abbrevs.txt" abbrevFile
-  parsed <- runX (RD.readDocument [withValidate no] fName >>>
-                  propagateNamespaces >>>
-                  stripQNames (getDroppedTrees config) //>
-                  hasQName (getTextRoot config) >>>
-                  multi (parserArrow config)
-                 )
+  lineOffsets <- runLineOffsetParser fName
+  parsed <- runXIOState (initialState lineOffsets)
+            (RD.readDocument [withValidate no] fName >>>
+             propagateNamespaces >>>
+             stripQNames (getDroppedTrees config) //>
+             hasQName (getTextRoot config) >>>
+             multi (parserArrow config)
+            )
   rc <- runX (root  -- make a root node containing the XML-Decl, PIs and the xml root element
               []    -- its attribute nodes
               [ -- its child nodes

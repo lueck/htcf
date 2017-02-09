@@ -62,16 +62,16 @@ mkPositionNode start end =
 -- * Arrows for retrieving the position
 
 --getTextXmlPosition' :: (ArrowXml a) => a XmlTree (Maybe XmlPosition)
-getTextXmlPosition :: IOSLA (XIOState u) XmlTree (Maybe XmlPosition)
+getTextXmlPosition :: IOSLA (XIOState [Int]) XmlTree (Maybe XmlPosition)
 getTextXmlPosition =
   getChildren >>> isPi >>> hasQName (mkNsName posPiName posNamespace) >>> getPosAttrs
   &&& getUserState
   >>> arr2 getXmlPos
   where
     -- FIXME
-    getXmlPos ((Just sL), (Just sC), _, _) _ = Just (sL*80 + sC) 
+    getXmlPos ((Just sL), (Just sC), _, _) lineOffsets = Just ((lineOffsets !! (sL-1)) + sC)
     getXmlPos _ _ = Nothing
-  
+
 getPosAttrs :: (ArrowXml a) => a XmlTree ((Maybe XmlPosition), (Maybe XmlPosition), (Maybe XmlPosition), (Maybe XmlPosition))
 getPosAttrs =
   getQAttrValue (mkNsName posStartLn posNamespace) &&&

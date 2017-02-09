@@ -31,6 +31,7 @@ library
                    , HTCF.PosParser.ParserInterface
                    , HTCF.PosParser.ProcessDocument
                    , HTCF.PosParser.ReadDocument
+                   , HTCF.LineOffsets
   -- other-modules:       
   -- other-extensions:    
   build-depends:     base >=4.9 && <4.10
