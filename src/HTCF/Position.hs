@@ -68,11 +68,10 @@ getTextXmlPosition =
   &&& getUserState
   >>> arr2 getXmlPos
   where
-    -- FIXME
     getXmlPos ((Just sL), (Just sC), _, _) lineOffsets = Just ((lineOffsets !! (sL-1)) + sC)
     getXmlPos _ _ = Nothing
 
-getPosAttrs :: (ArrowXml a) => a XmlTree ((Maybe XmlPosition), (Maybe XmlPosition), (Maybe XmlPosition), (Maybe XmlPosition))
+getPosAttrs :: (ArrowXml a) => a XmlTree ((Maybe Int), (Maybe Int), (Maybe Int), (Maybe Int))
 getPosAttrs =
   getQAttrValue (mkNsName posStartLn posNamespace) &&&
   getQAttrValue (mkNsName posStartCol posNamespace) &&&
@@ -80,7 +79,7 @@ getPosAttrs =
   getQAttrValue (mkNsName posEndCol posNamespace) >>>
   arr4 mkXmlPos
   where
-    mkXmlPos :: String -> String -> String -> String -> ((Maybe XmlPosition), (Maybe XmlPosition), (Maybe XmlPosition), (Maybe XmlPosition))
+    mkXmlPos :: String -> String -> String -> String -> ((Maybe Int), (Maybe Int), (Maybe Int), (Maybe Int))
     mkXmlPos sL sC eL eC
       = ( (readIntMaybe $ Just sL)
         , (readIntMaybe $ Just sC)
