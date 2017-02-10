@@ -2,6 +2,7 @@ module HTCF.TcfParser
   ( mkTcfElement
   , mkTcfElementButStructure
   , mkTcfText
+  , mkTcfTextFromCharRef
   , mkTcfStructure
   , mkTcfLineBreak
   ) where
@@ -24,57 +25,41 @@ mkTcfElement :: [Config] -> IOSLA (XIOState [Int]) XmlTree TcfElement
 mkTcfElement cfg =
   mkTcfStructure <+>
   mkTcfText <+>
+  mkTcfTextFromCharRef <+>
   mkTcfLineBreak cfg
 
+-- | Like 'mkTcfElement', but without structure elements. Use this
+-- instead of @mkTcfElement@ if no structure layer is to be produced.
 mkTcfElementButStructure :: [Config] -> IOSLA (XIOState [Int]) XmlTree TcfElement
 mkTcfElementButStructure cfg =
   mkTcfText <+>
+  mkTcfTextFromCharRef <+>
   mkTcfLineBreak cfg
 
--- | An arrow for parsing text nodes into the text layer.  It parses
--- text nodes regardless if they have a source position or not.
+-- | An arrow for parsing text nodes into the text layer.
 mkTcfText :: IOSLA (XIOState [Int]) XmlTree TcfElement
 mkTcfText =
-  isText >>>
-  mkTcfTextWithSrcPos `orElse` mkTcfTextWithoutSrcPos
-
-mkTcfTextWithSrcPos :: IOSLA (XIOState [Int]) XmlTree TcfElement
-mkTcfTextWithSrcPos =
   getText &&&
   arr (const 0) &&&    -- text offset
   getXmlPosition >>>
   arr (\(t, (tOffset, xPos)) -> TcfText t tOffset (fst xPos))
 
-mkTcfTextWithoutSrcPos :: IOSLA (XIOState [Int]) XmlTree TcfElement
-mkTcfTextWithoutSrcPos =
-  getText &&&
-  arr (const 0) &&&         -- text offset
-  arr (const Nothing) >>>   -- without source offset
-  arr3 TcfText
+-- | An arrow for parsing char refs into the text layer.
+mkTcfTextFromCharRef :: IOSLA (XIOState [Int]) XmlTree TcfElement
+mkTcfTextFromCharRef =
+  isCharRef >>>
+  getCharRef &&&
+  arr (const 0) &&&
+  getXmlPosition >>>
+  arr (\(i, (tOffset, xPos)) -> TcfText [toEnum i] tOffset (fst xPos))
 
--- | An arrow for parsing tags into the structure layer. It parses
--- structure elements regardless if they have a source position or
--- not.
+-- | An arrow for parsing tags into the structure layer.
 mkTcfStructure :: IOSLA (XIOState [Int]) XmlTree TcfElement
 mkTcfStructure =
-  isElem >>>
-  mkTcfStructureWithSrcPos `orElse` mkTcfStructureWithoutSrcPos
-
-mkTcfStructureWithSrcPos :: IOSLA (XIOState [Int]) XmlTree TcfElement
-mkTcfStructureWithSrcPos =
   getQName &&&
   arr (const 0) &&&
   arr (const 0) &&&
   getXmlPosition >>>
-  arr (\(qN, (tStart, (tEnd, xPos)))
-       -> TcfStructure qN tStart tEnd (fst xPos) (snd xPos))
-
-mkTcfStructureWithoutSrcPos :: IOSLA (XIOState [Int]) XmlTree TcfElement
-mkTcfStructureWithoutSrcPos =
-  getQName &&&
-  arr (const 0) &&&
-  arr (const 0) &&&
-  arr (const (Nothing, Nothing)) >>>
   arr (\(qN, (tStart, (tEnd, xPos)))
        -> TcfStructure qN tStart tEnd (fst xPos) (snd xPos))
 

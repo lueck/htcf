@@ -79,8 +79,12 @@ getXmlPosition =
       | otherwise = (Nothing, Nothing)
     getXmlPos _ _ = (Nothing, Nothing)
 
+-- | Get a 4-tuple int representing the line and column values for the
+-- start and end offset. If no attributes with these values are found,
+-- a quadruple of Nothing is returned.
 getPosAttrs :: (ArrowXml a) => a XmlTree ((Maybe Int), (Maybe Int), (Maybe Int), (Maybe Int))
 getPosAttrs =
+  -- getQAttrValue never fails, but returns "" for a non-present attribute
   getQAttrValue (mkNsName posStartLn posNamespace) &&&
   getQAttrValue (mkNsName posStartCol posNamespace) &&&
   getQAttrValue (mkNsName posEndLn posNamespace) &&&
@@ -89,7 +93,7 @@ getPosAttrs =
   where
     mkXmlPos :: String -> String -> String -> String -> ((Maybe Int), (Maybe Int), (Maybe Int), (Maybe Int))
     mkXmlPos sL sC eL eC
-      = ( (readIntMaybe $ Just sL)
+      = ( (readIntMaybe $ Just sL) -- readIntMaybe returns Nothing for ""
         , (readIntMaybe $ Just sC)
         , (readIntMaybe $ Just eL)
         , (readIntMaybe $ Just eC))
