@@ -155,8 +155,8 @@ tokenize cfg tcf = tokenize' 1 tcf
       -- several text nodes.
       = tokenize' i ((mvTextLeft x1 x2 1 id id) ++ xs)
 
-    -- Case 3: general case. Cases 1 and 2 are not covered by this
-    -- because (t2':_) does not match (t2':[]).
+    -- Case 2, general case. Cases 1 is not covered by this because
+    -- (t2':_) does not match (t2':[]).
     tokenize' i (x1@(TcfText t1 _ _) : x2@(TcfText t2@(t2':_) _ _) : xs)
       | (not $ null t1) && -- First text is non-empty.
         (not $ hasBreak t1) && -- First text is a token or less.
