@@ -19,6 +19,7 @@
     <!--hyphen char="-"/-->
     <noBreak char="-"/>
     <noBreak char="–"/><!-- 0x2013 -->
+    <noBreak char="’"/>
     <preNumAbbrev
 	string="Bar"/>
     <preNumAbbrev
