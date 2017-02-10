@@ -58,7 +58,10 @@ mkPositionNode start end =
 
 -- * Arrows for retrieving the position
 
---getTextXmlPosition' :: (ArrowXml a) => a XmlTree (Maybe XmlPosition)
+-- | Arrow for retrieving the position of an arbitrary XNode. Returns
+-- a tuple of Just start and end xml positions. If no position if
+-- found, a tuple of Nothing is returned. The list of line offsets is
+-- expected to be in user state.
 getXmlPosition :: IOSLA (XIOState [Int]) XmlTree ((Maybe XmlPosition), (Maybe XmlPosition))
 getXmlPosition =
   -- get PI with position attributes (XText, XCharRef)
@@ -69,6 +72,7 @@ getXmlPosition =
   getPosAttrs &&& getUserState >>> -- pass attributes and user state
   arr2 getXmlPos
   where
+    getXmlPos _ [] = (Nothing, Nothing) -- redundant, because length tested
     getXmlPos ((Just sL), (Just sC), (Just eL), (Just eC)) lineOffsets
       | (eL-1) <= length lineOffsets = ( (Just ((lineOffsets !! (sL-1)) + sC))
                                        , (Just ((lineOffsets !! (eL-1)) + eC)))
