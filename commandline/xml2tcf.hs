@@ -55,7 +55,10 @@ run (Convert configFile abbrevFile outputMethod outputStructure fName) = do
   abbrevs <- readFile $ fromMaybe "abbrevs.txt" abbrevFile
   lineOffsets <- runLineOffsetParser fName
   parsed <- runXIOState (initialState lineOffsets)
-            (RD.readDocument [withValidate no] fName >>>
+            (RD.readDocument [ withValidate no
+                             , withCanonicalize no -- do not substitute char refs
+                             --, withTrace 4
+                             ] fName >>>
              propagateNamespaces >>>
              stripQNames (getDroppedTrees config) //>
              hasQName (getTextRoot config) >>>
