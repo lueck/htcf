@@ -144,6 +144,19 @@ tokenize cfg tcf = tokenize' 1 tcf
     
     -- Continueing Token: A continuing token spans more than one
     -- TcfText without break.
+    
+    -- Case 1: Second text is yust 1 char, like in "Hall" "o".
+    tokenize' i (x1@(TcfText t1 _ _) : x2@(TcfText (c:[]) _ _) : xs)
+      | (not $ null t1) && -- First text is non-empty.
+        (not $ hasBreak t1) && -- First text is a token or less.
+        (not $ isBreak c) -- Text 2 does not start with break.
+      -- We do not create a token, but move letters from the second
+      -- text to the first. This will be repeated for tokens that span
+      -- several text nodes.
+      = tokenize' i ((mvTextLeft x1 x2 1 id id) ++ xs)
+
+    -- Case 3: general case. Cases 1 and 2 are not covered by this
+    -- because (t2':_) does not match (t2':[]).
     tokenize' i (x1@(TcfText t1 _ _) : x2@(TcfText t2@(t2':_) _ _) : xs)
       | (not $ null t1) && -- First text is non-empty.
         (not $ hasBreak t1) && -- First text is a token or less.
@@ -211,6 +224,10 @@ tokenize cfg tcf = tokenize' 1 tcf
     -- Drop zero length text node.
     tokenize' i ((TcfText "" _ _):xs)
       = tokenize' i xs
+    -- Drop zero length text node 1 position ahead. This rests from
+    -- continuing token, case 1.
+    tokenize' i (x:(TcfText "" _ _):xs)
+      = tokenize' i (x:xs)
 
     -- Make tokens by eating a single TcfText element.
     tokenize' i (x@(TcfText tx@(t:ts) _ _):xs)

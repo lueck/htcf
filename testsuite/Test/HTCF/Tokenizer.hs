@@ -118,6 +118,25 @@ test_continuingWord = do
     parsed = [(mkTcfTextSample "Hal" 1 1),
               (mkTcfTextSample "lo Welt" 4 7)]
 
+test_continuingWordChar = do
+  assertEqual
+    ["Hallo", "Welt"]
+    (map getToken (tokenize [] parsed))
+  where
+    parsed = [(mkTcfTextSample "Hal" 1 1),
+              (mkTcfTextSample "l" 4 4),
+              (mkTcfTextSample "o Welt" 5 7)]
+
+test_continuingWordCharFst = do
+  assertEqual
+    ["Hallo", "Welt"]
+    (map getToken (tokenize [] parsed))
+  where
+    parsed = [(mkTcfTextSample "H" 1 1),
+              (mkTcfTextSample "al" 2 2),
+              (mkTcfTextSample "l" 4 4),
+              (mkTcfTextSample "o Welt" 5 7)]
+
 test_continuingWordOverStruct = do
   assertEqual
     ["Hallo", "Welt"]
@@ -165,7 +184,6 @@ test_hyphenCase2WithWhiteSpace = do
               (TcfLineBreak),
               (mkTcfTextSample "\n\tlo Welt" 4 7)]
 
-{- -- FIXME!
 test_hyphenCase2WithWhiteSpaceContinued = do
   assertEqual
     ["Hallo", "Welt"]
@@ -176,7 +194,6 @@ test_hyphenCase2WithWhiteSpaceContinued = do
               (mkTcfTextSample "\n\tl" 7 12),
               (mkTcfStructureSample (mkNsName "b" "http://www.w3.org/1999/xhtml") 11 13 11 16), 
               (mkTcfTextSample "o Welt" 4 7)]
--}
 
 -- * Date tests
 
