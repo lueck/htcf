@@ -1,3 +1,4 @@
+{-# LANGUAGE RankNTypes #-}
 module HTCF.Tokenizer
   ( Token (..)
   , tokenize
@@ -90,20 +91,20 @@ tokenize cfg tcf = tokenize' 1 tcf
       (Token tok (Just idd)
          (Just tOffset)
          (Just $ shiftTextPosition tOffset $ length tok - 1)
-         xOffset
-         (shiftXmlPosition xOffset $ length tok - 1))
+         (fst $ head xOffset)
+         (snd $ xOffset !! (length tok - 1)))
       where
         tOffset = getTextOffset el
-        xOffset = getSrcOffset el
+        xOffset = getSrcCharOffsets el
     mkToken tok idd el offset =
       (Token tok (Just idd)
          (Just $ shiftTextPosition tOffset offset)
          (Just $ shiftTextPosition tOffset $ offset + length tok - 1)
-         (shiftXmlPosition xOffset offset)
-         (shiftXmlPosition xOffset $ offset + length tok - 1))
+         (fst $ xOffset !! offset)
+         (snd $ xOffset !! (offset + length tok - 1)))
       where
         tOffset = getTextOffset el
-        xOffset = getSrcOffset el
+        xOffset = getSrcCharOffsets el
 
     mkText :: TcfElement     -- the old text
            -> Int            -- number of chars to drop from the old text (text node)
@@ -112,21 +113,21 @@ tokenize cfg tcf = tokenize' 1 tcf
       (TcfText
        (drop n txt)
        (shiftTextPosition tOffset n)
-       (shiftXmlPosition xOffset n))
+       (drop n xOffset))
 
-    mvTextLeft :: TcfElement   -- the old first (left) text
+    mvTextLeft :: forall a b. TcfElement   -- the old first (left) text
                -> TcfElement   -- the old second (right) text
                -> Int          -- numbers of chars to drop from the
                                -- right
-               -> (String -> String) -- function to apply on left text
-               -> (String -> String) -- function to apply on right text
+               -> ([a] -> [a]) -- function to apply on left text
+               -> ([b] -> [b]) -- function to apply on right text
                -> [TcfElement] -- returns two new text elements
     mvTextLeft (TcfText t1 tO1 xO1) (TcfText t2 tO2 xO2) i f1 f2 =
-      [ (TcfText ((f1 t1)++(f2 t2)) tO1 xO1)
+      [ (TcfText ((f1 t1)++(f2 t2)) tO1 ((f1 xO1) ++ (f2 xO2)))
       , (TcfText
          (drop i t2)
          (shiftTextPosition tO2 i)
-         (shiftXmlPosition xO2 i))]
+         (drop i xO2))]
                
     -- tokenize' does all the work.
     tokenize' :: Int -- ^ token id (number)
@@ -153,7 +154,7 @@ tokenize cfg tcf = tokenize' 1 tcf
       -- We do not create a token, but move letters from the second
       -- text to the first. This will be repeated for tokens that span
       -- several text nodes.
-      = tokenize' i ((mvTextLeft x1 x2 1 id id) ++ xs)
+      = tokenize' i ((mvTextLeft x1 x2 1 id (take 1)) ++ xs)
 
     -- Case 2, general case. Cases 1 is not covered by this because
     -- (t2':_) does not match (t2':[]).

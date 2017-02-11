@@ -42,7 +42,12 @@ mkTcfText =
   getText &&&
   arr (const 0) &&&    -- text offset
   getXmlPosition >>>
-  arr (\(t, (tOffset, xPos)) -> TcfText t tOffset (fst xPos))
+  arr (\(t, (tOffset, xPos)) -> TcfText t tOffset (mkCharPositions t xPos))
+  where
+    mkCharPositions t ((Just start), (Just end))
+      | length t == end - start = [((Just i), (Just i)) | i <- [start .. end]]
+    mkCharPositions t (_, _)
+      = replicate (length t) (Nothing, Nothing)
 
 -- | An arrow for parsing char refs into the text layer.
 mkTcfTextFromCharRef :: IOSLA (XIOState [Int]) XmlTree TcfElement
@@ -51,7 +56,7 @@ mkTcfTextFromCharRef =
   getCharRef &&&
   arr (const 0) &&&
   getXmlPosition >>>
-  arr (\(i, (tOffset, xPos)) -> TcfText [toEnum i] tOffset (fst xPos))
+  arr (\(i, (tOffset, xPos)) -> TcfText [toEnum i] tOffset [xPos])
 
 -- | An arrow for parsing tags into the structure layer.
 mkTcfStructure :: IOSLA (XIOState [Int]) XmlTree TcfElement
