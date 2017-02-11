@@ -36,7 +36,11 @@ import           Text.ParserCombinators.Parsec         (between, char, eof,
                                                         notFollowedBy, option,
                                                         runParser, sourceName,
                                                         string, try, unexpected,
-                                                        (<?>), (<|>))
+                                                        (<?>), (<|>),
+                                                        sourceName,
+                                                        sourceLine,
+                                                        sourceColumn,
+                                                        setSourceColumn)
 
 import           Text.XML.HXT.DOM.Interface
 import           Text.XML.HXT.DOM.ShowXml              (xshow)
@@ -72,6 +76,9 @@ import HTCF.Position (mkPositionNode, mkPositionAttrs)
 
 -- import Debug.Trace
 
+corPos :: SourcePos -> Int -> SourcePos
+corPos p i = setSourceColumn p ((sourceColumn p)+i)
+
 mkPosText :: SourcePos -> SourcePos -> String -> XmlTree
 mkPosText start end t =
   mkTree (XN.mkText t) [(mkPositionNode start end)]
@@ -96,7 +103,7 @@ charData' =  do
   start <- getPosition
   t <- XT.allBut1 many1 (\ c -> not (c `elem` "<&")) "]]>"
   end <- getPosition
-  return (mkPosText start end t)
+  return (mkPosText start (corPos end (-1)) t)
 
 
 -- ------------------------------------------------------------
@@ -114,7 +121,7 @@ charRefT = do
   start <- getPosition
   i <- XT.charRef
   end <- getPosition
-  return (mkPosCharRef i start end)
+  return (mkPosCharRef i start (corPos end (-1)))
 
 entityRefT :: XParser s XmlTree
 entityRefT = do
@@ -123,8 +130,8 @@ entityRefT = do
   end <- getPosition
   return $ ref n start end
   where
-    ref (XN.NTree (XEntityRef n) _) s e = mkTree (XN.mkEntityRef n) [(mkPositionNode s e)]
-    ref (XN.NTree (XCharRef i) _) s e = mkPosCharRef i s e
+    ref (XN.NTree (XEntityRef n) _) s e = mkTree (XN.mkEntityRef n) [(mkPositionNode s (corPos e (-1)))]
+    ref (XN.NTree (XCharRef i) _) s e = mkPosCharRef i s (corPos e (-1))
 
 -- ------------------------------------------------------------
 --
