@@ -12,7 +12,7 @@ import HTCF.Tokenizer
 import HTCF.ConfigParser
 import HTCF.TcfParser
 import HTCF.TcfParserTypeDefs
-import HTCF.LayerTypeDefs
+import HTCF.TokenLayer
 import HTCF.LineOffsets
 import qualified HTCF.PosParser.ReadDocument as RD (readDocument)
 

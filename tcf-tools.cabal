@@ -22,9 +22,10 @@ library
                    , HTCF.TcfParser
                    , HTCF.TcfParserTypeDefs
                    , HTCF.Position
+                   , HTCF.TextLayer
+                   , HTCF.TokenLayer
                    , HTCF.Tokenizer
                    , HTCF.Utils
-                   , HTCF.LayerTypeDefs
                    , HTCF.ReadTcf
                    , HTCF.WriteTcf
                    , HTCF.PosParser.XmlParsec

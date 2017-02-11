@@ -13,7 +13,7 @@ import Data.Char
 import Data.List
 import Data.Maybe
 
-import HTCF.LayerTypeDefs
+import HTCF.TokenLayer
 import HTCF.Position
 import HTCF.TcfParserTypeDefs
 import HTCF.ConfigParser

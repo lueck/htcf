@@ -6,7 +6,8 @@ import Text.XML.HXT.Core
 import Data.Maybe
 
 import HTCF.ReadTcf
-import HTCF.LayerTypeDefs
+import HTCF.TextLayer
+import HTCF.TokenLayer
 import HTCF.Utils
 
 import HTCF.ConfigParser

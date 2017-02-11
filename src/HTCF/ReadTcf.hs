@@ -1,52 +1,29 @@
 module HTCF.ReadTcf
   ( runTcfReader
   , parseTcfLayers
-  , parseTokens
-  , parseToken
   ) where
 
 import Text.XML.HXT.Core
 
-import HTCF.LayerTypeDefs
-import HTCF.Utils
-
 import HTCF.ConfigParser
 
-runTcfReader :: [Config] -> FilePath -> IO [{- FIXME: -}Token]
+import HTCF.TokenLayer
+import HTCF.TextLayer
+
+-- | Run the TCF reader in the IO monad.
+runTcfReader :: [Config] -> FilePath -> IO ([Text], [Token] {-, [SomethingElse]-})
 runTcfReader cfg fname = do
   layers <- runX (readDocument [withValidate no] fname >>>
                   propagateNamespaces //>
-                  --isElem >>>
-                  --hasQName (mkNsName "TextCorpus" $ getTcfTextCorpusNamespace cfg) >>>
-                  multi (parseTcfLayers cfg))
-  return layers
+                  parseTcfLayers cfg)
+  return $ unzip{-3-} layers -- increment tier of unzip for something else
 
-
-parseTcfLayers :: (ArrowXml a) => [Config] -> a XmlTree {- FIXME: -}Token
+-- | The parser arrow for the TCF reader. Usage: see 'runTcfReader'.
+parseTcfLayers :: (ArrowXml a) => [Config] -> a XmlTree (Text, Token {-, SomethingElse-})
 parseTcfLayers cfg =
-  parseTokens cfg
-
-parseTokens :: (ArrowXml a) => [Config] -> a XmlTree Token
-parseTokens cfg =
-  isElem >>> hasQName (mkNsName "tokens" $ getTcfTextCorpusNamespace cfg) >>>
+  isElem >>>
+  hasQName (mkNsName "TextCorpus" $ getTcfTextCorpusNamespace cfg) >>>
   getChildren >>>
-  isElem >>> parseToken cfg
-
-parseToken :: (ArrowXml a) => [Config] -> a XmlTree Token
-parseToken cfg =
-  hasQName (mkNsName "token" $ getTcfTextCorpusNamespace cfg) >>>
-  (getChildren >>> getText) &&&
-  getAttrValue "ID" &&&
-  getAttrValue "start" &&&
-  getAttrValue "end" &&&
-  getAttrValue "srcStart" &&&
-  getAttrValue "srcEnd" >>>
-  arr (\(t, (idd, (s, (e, (sS, sE))))) ->
-         (Token
-           t
-           (readBasePrefixed cfg idd)
-           (readIntMaybe $ Just s)
-           (readIntMaybe $ Just e)
-           (readIntMaybe $ Just sS)
-           (readIntMaybe $ Just sE)))
-{-# INLINE parseToken #-}
+  parseTextLayer cfg &&&
+  parseTokens cfg {- &&&
+  parseSomethingElse -}

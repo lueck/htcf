@@ -9,8 +9,9 @@ import Data.Maybe
 import HTCF.ConfigParser
 import HTCF.TcfParser
 import HTCF.TcfParserTypeDefs
-import HTCF.LayerTypeDefs
+import HTCF.TokenLayer
 import HTCF.Tokenizer
+import HTCF.TextLayer
 import HTCF.ArrowXml
 import HTCF.WriteTcf
 import HTCF.LineOffsets
