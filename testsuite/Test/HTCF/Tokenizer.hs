@@ -77,9 +77,9 @@ prop_srcOffset (Positive i) = monadicIO $ do
     wd = getToken tok
     -- -1 because first char is !! 0. Is this right? And is it
     -- -consistent with text offsets? FIXME?
-    srcTxt = take (end-start+1) $ drop (start-1) srcContents
-  assert ((srcContents !! (start-1)) `elem` ((head wd):"&"))  -- start char
-  assert ((srcContents !! (end-1)) `elem` ((last wd):";"))  -- end char
+    srcTxt = take (end-start+1) $ drop (start) srcContents
+  assert ((srcContents !! start) `elem` ((head wd):"&"))  -- start char
+  assert ((srcContents !! end) `elem` ((last wd):";"))  -- end char
   assert ((srcTxt == wd) || ('&' `elem` srcTxt) || ('<' `elem` srcTxt)) -- all chars
 
 -- | Testing test offset with a fixed token number. This indicates,

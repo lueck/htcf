@@ -103,7 +103,10 @@ charData' =  do
   start <- getPosition
   t <- XT.allBut1 many1 (\ c -> not (c `elem` "<&")) "]]>"
   end <- getPosition
-  return (mkPosText start (corPos end (-1)) t)
+  -- correct position: Start: SourcePos does not know column 0, so
+  -- -1. End: The ending char was alread consumed (-1) and ibid.,
+  -- results in -2.
+  return (mkPosText (corPos start (-1)) (corPos end (-2)) t)
 
 
 -- ------------------------------------------------------------
@@ -121,7 +124,8 @@ charRefT = do
   start <- getPosition
   i <- XT.charRef
   end <- getPosition
-  return (mkPosCharRef i start (corPos end (-1)))
+  -- correct position: cf. char'
+  return (mkPosCharRef i (corPos start (-1)) (corPos end (-2)))
 
 entityRefT :: XParser s XmlTree
 entityRefT = do
@@ -130,8 +134,9 @@ entityRefT = do
   end <- getPosition
   return $ ref n start end
   where
-    ref (XN.NTree (XEntityRef n) _) s e = mkTree (XN.mkEntityRef n) [(mkPositionNode s (corPos e (-1)))]
-    ref (XN.NTree (XCharRef i) _) s e = mkPosCharRef i s (corPos e (-1))
+    -- correct position: cf. char'
+    ref (XN.NTree (XEntityRef n) _) s e = mkTree (XN.mkEntityRef n) [(mkPositionNode (corPos s (-1)) (corPos e (-2)))]
+    ref (XN.NTree (XCharRef i) _) s e = mkPosCharRef i (corPos s (-1)) (corPos e (-2))
 
 -- ------------------------------------------------------------
 --
@@ -424,7 +429,11 @@ elementRest (n, al, start)
         c <- content
         eTag n
         end <- getPosition
-        return $ mkPosElement n start end al c
+        -- correct position: start: -2: the opening < was already
+        -- consumed (-1) and SourcePos does not now column 0 (-1),
+        -- results in -2. end: -2: the closing > was already consumed
+        -- (-1) and ibid.
+        return $ mkPosElement n (corPos start (-2)) (corPos end (-2)) al c
       )
       <?> "proper attribute list followed by \"/>\" or \">\""
 
