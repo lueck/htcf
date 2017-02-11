@@ -36,6 +36,28 @@ parseWithPos fName = do
             )
   return parsed
 
+-- | Assert that the lengths of the text and of the charPos fields of
+-- a TcfText record equal after parsing. If they were not, the source
+-- positions would fail.
+prop_charPosLength :: Positive Int -> Property
+prop_charPosLength (Positive i) = monadicIO $ do
+  parsed <- run (parseWithPos sampleFile)
+  let
+    tcfTexts = filter isTcfText parsed
+    txt = tcfTexts !! (mod i $ length tcfTexts)
+  assert ((length $ getTcfText txt) == (length $ getSrcCharOffsets txt))
+
+-- | Like prop_charPosLength, but without source positions but Nothing
+-- instead.
+prop_charPosLengthNoPos :: Positive Int -> Property
+prop_charPosLengthNoPos (Positive i) = monadicIO $ do
+  parsed <- run (parseWithoutPos sampleFile)
+  let
+    tcfTexts = filter isTcfText parsed
+    txt = tcfTexts !! (mod i $ length tcfTexts)
+  assert ((length $ getTcfText txt) == (length $ getSrcCharOffsets txt))
+
+
 -- | Testing for exact number of tcf text elements. This asserts that
 -- mkTcfElement produces elements regardless of presence of source
 -- positions. FIXME: This may break with implementation of hxt's
