@@ -45,7 +45,7 @@ mkTcfText =
   arr (\(t, (tOffset, xPos)) -> TcfText t tOffset (mkCharPositions t xPos))
   where
     mkCharPositions t ((Just start), (Just end))
-      | length t == end - start = [((Just i), (Just i)) | i <- [start .. end]]
+      | length t == end - start + 1 = [((Just i), (Just i)) | i <- [start .. end]]
     mkCharPositions t (_, _)
       = replicate (length t) (Nothing, Nothing)
 

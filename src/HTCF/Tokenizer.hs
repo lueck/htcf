@@ -92,16 +92,16 @@ tokenize cfg tcf = tokenize' 1 tcf
          (Just tOffset)
          (Just $ shiftTextPosition tOffset $ length tok - 1)
          (fst $ head xOffset)
-         (fmap (+(-1)) (snd $ xOffset !! (length tok))))
+         (snd $ last $ take (length tok) xOffset))
       where
         tOffset = getTextOffset el
         xOffset = getSrcCharOffsets el
     mkToken tok idd el offset =
       (Token tok (Just idd)
          (Just $ shiftTextPosition tOffset offset)
-         (Just $ shiftTextPosition tOffset $ offset + length tok - 1)
+         (Just $ shiftTextPosition tOffset $ offset + length tok)
          (fst $ xOffset !! offset)
-         (fmap (+(-1)) (snd $ xOffset !! (offset + length tok))))
+         (snd $ last $ take (offset + length tok) xOffset))
       where
         tOffset = getTextOffset el
         xOffset = getSrcCharOffsets el
