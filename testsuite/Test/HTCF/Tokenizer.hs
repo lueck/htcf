@@ -14,6 +14,7 @@ import HTCF.TcfParser
 import HTCF.TcfParserTypeDefs
 import HTCF.LayerTypeDefs
 import HTCF.LineOffsets
+import qualified HTCF.PosParser.ReadDocument as RD (readDocument)
 
 sampleFile = "doc/examples/kant_aufklaerung_1784.TEI-P5.xml"
 
@@ -21,7 +22,7 @@ monthsConfig = [(Month "Oktober")]
 
 mkTcfTextSample :: String -> Int -> Int -> TcfElement
 mkTcfTextSample t tOffset xOffset =
-  (TcfText t tOffset (Just xOffset))
+  (TcfText t tOffset (replicate (length t) (Nothing, Nothing)))
 
 mkTcfStructureSample :: QName -> Int -> Int -> Int -> Int -> TcfElement
 mkTcfStructureSample qName tS tE xS xE =
@@ -37,6 +38,18 @@ parse fName = runXIOState (initialState [])
                multi (mkTcfElement [])
               )
 
+-- | helper function
+parseWithPos :: FilePath -> IO [TcfElement]
+parseWithPos fName = do
+  lineOffsets <- runLineOffsetParser fName
+  parsed <- runXIOState (initialState lineOffsets)
+            (RD.readDocument [withValidate no
+                             ,withCanonicalize no] fName >>>
+             propagateNamespaces >>>
+             multi (mkTcfElement [])
+            )
+  return parsed
+
 -- | Testing offsets of token with randomized number
 prop_textOffset :: Positive Int -> Property
 prop_textOffset (Positive i) = monadicIO $ do
@@ -50,31 +63,27 @@ prop_textOffset (Positive i) = monadicIO $ do
     wd = getToken tok
   assert ((take (end-start+1) $ drop start textLayer) == wd)
 
-{- -- FIXME: get QuickCheck test working with arbitrary input
-instance Arbitrary TcfElement where
-  arbitrary = oneof
-              [ TcfText <$> arbitrary <*> arbitrary <*> arbitrary
-              , TcfStructure <$> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
-              -- TcfLineBreak
-              ]
-
-instance Arbitrary QName where
-  -- QName does not export a constructor
-  arbitrary = mkQName arbitrary arbitrary arbitrary
-
-prop_textOffset :: Positive Int -> [TcfElement] -> Bool
-prop_textOffset (Positive i) parsed = (take (end-start+1) $ drop start textLayer) == wd
-  where
+-- | Testing source offsets with randomize token number
+prop_srcOffset :: Positive Int -> Property
+prop_srcOffset (Positive i) = monadicIO $ do
+  parsed <- run (parseWithPos sampleFile)
+  srcContents <- run (readFile sampleFile)
+  let
     textLayer = concatMap getTcfText parsed
     tokens = tokenize [] $ propagateOffsets parsed
-    tok = tokens !! (min i $ length tokens)
-    start = fromMaybe 0 $ getTokenStartTextPos tok
-    end = fromMaybe 0 $ getTokenEndTextPos tok
+    tok = tokens !! (mod i $ length tokens) -- randomized token number
+    start = fromMaybe 0 $ getTokenStartSrcPos tok
+    end = fromMaybe 0 $ getTokenEndSrcPos tok
     wd = getToken tok
--}
+    -- -1 because first char is !! 0. Is this right? And is it
+    -- -consistent with text offsets? FIXME?
+    srcTxt = take (end-start+1) $ drop (start-1) srcContents
+  assert ((srcContents !! (start-1)) `elem` ((head wd):"&"))  -- start char
+  assert ((srcContents !! (end-1)) `elem` ((last wd):";"))  -- end char
+  assert ((srcTxt == wd) || ('&' `elem` srcTxt) || ('<' `elem` srcTxt)) -- all chars
 
--- | Testing with a fixed token number. This indicates, that we have
--- not systematically lost any tokens.
+-- | Testing test offset with a fixed token number. This indicates,
+-- that we have not systematically lost any tokens.
 test_textOffsetFixed = do
   parsed <- parse sampleFile
   let textLayer = concatMap getTcfText parsed
