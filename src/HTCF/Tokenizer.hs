@@ -1,4 +1,4 @@
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE Rank2Types #-}
 module HTCF.Tokenizer
   ( Token (..)
   , tokenize
@@ -92,7 +92,7 @@ tokenize cfg tcf = tokenize' 1 tcf
          (Just tOffset)
          (Just $ shiftTextPosition tOffset $ length tok - 1)
          (fst $ head xOffset)
-         (snd $ xOffset !! (length tok - 1)))
+         (fmap (+(-1)) (snd $ xOffset !! (length tok))))
       where
         tOffset = getTextOffset el
         xOffset = getSrcCharOffsets el
@@ -101,7 +101,7 @@ tokenize cfg tcf = tokenize' 1 tcf
          (Just $ shiftTextPosition tOffset offset)
          (Just $ shiftTextPosition tOffset $ offset + length tok - 1)
          (fst $ xOffset !! offset)
-         (snd $ xOffset !! (offset + length tok - 1)))
+         (fmap (+(-1)) (snd $ xOffset !! (offset + length tok))))
       where
         tOffset = getTextOffset el
         xOffset = getSrcCharOffsets el
@@ -115,15 +115,16 @@ tokenize cfg tcf = tokenize' 1 tcf
        (shiftTextPosition tOffset n)
        (drop n xOffset))
 
-    mvTextLeft :: forall a b. TcfElement   -- the old first (left) text
+    mvTextLeft :: TcfElement   -- the old first (left) text
                -> TcfElement   -- the old second (right) text
                -> Int          -- numbers of chars to drop from the
                                -- right
-               -> ([a] -> [a]) -- function to apply on left text
-               -> ([b] -> [b]) -- function to apply on right text
                -> [TcfElement] -- returns two new text elements
-    mvTextLeft (TcfText t1 tO1 xO1) (TcfText t2 tO2 xO2) i f1 f2 =
-      [ (TcfText ((f1 t1)++(f2 t2)) tO1 ((f1 xO1) ++ (f2 xO2)))
+    mvTextLeft (TcfText t1 tO1 xO1) (TcfText t2 tO2 xO2) i  =
+      [ (TcfText
+         (t1++(take i t2))
+         tO1
+         (xO1++(take i xO2)))
       , (TcfText
          (drop i t2)
          (shiftTextPosition tO2 i)
@@ -154,7 +155,7 @@ tokenize cfg tcf = tokenize' 1 tcf
       -- We do not create a token, but move letters from the second
       -- text to the first. This will be repeated for tokens that span
       -- several text nodes.
-      = tokenize' i ((mvTextLeft x1 x2 1 id (take 1)) ++ xs)
+      = tokenize' i ((mvTextLeft x1 x2 1) ++ xs)
 
     -- Case 2, general case. Cases 1 is not covered by this because
     -- (t2':_) does not match (t2':[]).
@@ -165,12 +166,12 @@ tokenize cfg tcf = tokenize' 1 tcf
       -- We do not create a token, but move letters from the second
       -- text to the first. This will be repeated for tokens that span
       -- several text nodes.
-      = tokenize' i ((mvTextLeft x1 x2 letters id (take letters)) ++ xs)
+      = tokenize' i ((mvTextLeft x1 x2 letters) ++ xs)
 
       -- More context needed for abbrev
       -- wrapping in words is for continuing over white space only nodes 
       | (not $ null t1) && (last t1) == '.'
-      = tokenize' i ((mvTextLeft x1 x2 (spaces+fstWord) id (take (spaces+fstWord))) ++ xs)
+      = tokenize' i ((mvTextLeft x1 x2 (spaces+fstWord)) ++ xs)
 
       where
         letters = length $ takeWhile (not . isBreak) t2
@@ -217,7 +218,17 @@ tokenize cfg tcf = tokenize' 1 tcf
       | (not $ null t1) && -- first text must be non-empty
         (not $ hasBreak t1) && -- first text is a word. May there be trailing whitespace?
         (elem (last t1) $ getHyphens cfg) -- trailing hyphen in first text
-      = tokenize' i ((mvTextLeft x1 x2 (letters+spaces) init (take letters . drop spaces)) ++ xs)
+      = tokenize' i ((TcfText
+                      ((init t1)++(take letters $ drop spaces t2))
+                      (getTextOffset x1)
+                      ((init (getSrcCharOffsets x1)++(take letters $ drop spaces $ getSrcCharOffsets x2))))
+                     :
+                     (TcfText
+                      (drop (letters+spaces) t2)
+                      (shiftTextPosition (getTextOffset x2) (letters+spaces))
+                      (drop (letters+spaces) $ getSrcCharOffsets x2))
+                     :xs)
+        --((mvTextLeft x1 x2 (letters+spaces) init (take letters . drop spaces)) ++ xs)
       where
         spaces = length $ takeWhile isSpace t2
         letters = length $ takeWhile (not . isBreak) (drop spaces t2)
