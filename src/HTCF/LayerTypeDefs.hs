@@ -7,6 +7,8 @@ module HTCF.LayerTypeDefs
   , getTokenID
   , getTokenStartTextPos
   , getTokenEndTextPos
+  , getTokenStartSrcPos
+  , getTokenEndSrcPos
   , Sentence (..)
   , SentenceID
   , Lemma (..)
@@ -54,6 +56,12 @@ getTokenStartTextPos (Token _ _ s _ _ _) = s
 
 getTokenEndTextPos :: Token -> Maybe TextPosition
 getTokenEndTextPos (Token _ _ _ e _ _) = e
+
+getTokenStartSrcPos :: Token -> Maybe XmlPosition
+getTokenStartSrcPos (Token _ _ _ _ s _) = s
+
+getTokenEndSrcPos :: Token -> Maybe XmlPosition
+getTokenEndSrcPos (Token _ _ _ _ _ e) = e
 
 -- * Sentence
 
