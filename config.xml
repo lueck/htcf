@@ -49,6 +49,8 @@
 	namespace="http://www.dspin.de/data"/>
     <tcfTextCorpusNamespace
 	namespace="http://www.dspin.de/data/textcorpus"/>
+    <tcfMetadataNamespace
+	namespace="http://www.dspin.de/data/metadata"/>
     <idBase base="16"/>
     <idPrefixDelimiter delimiter="_"/>
   </tcf>
