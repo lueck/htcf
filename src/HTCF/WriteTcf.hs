@@ -5,13 +5,41 @@ module HTCF.WriteTcf
 import Text.XML.HXT.Core
 
 import HTCF.ConfigParser
-import HTCF.TokenLayer
-import HTCF.TextLayer
 
--- Does not really make sense here. Put it in the command line
--- program.
-runTcfWriter :: [Config] -> [{- FIXME: -}Token] -> IO (String)
-runTcfWriter cfg toks = do
-  rc <- runX (root [] [(writeTokenLayer cfg toks)] >>>
+-- | Run the tcf writer in the IO monad.
+runTcfWriter :: [Config]                              -- ^ the config
+             -> [IOSLA (XIOState ()) XmlTree XmlTree] -- ^ arrows for making the preamble
+             -> [IOSLA (XIOState ()) XmlTree XmlTree] -- ^ arrows for making the layers
+             -> IO String
+runTcfWriter cfg preamble layers = do
+  rc <- runX (mkTcfDocument cfg preamble layers >>>
               writeDocumentToString [withIndent yes])
   return $ concat rc
+
+
+-- | Arrow for generating the TCF file.
+mkTcfDocument :: (ArrowXml a) => [Config]      -- ^ the config
+              -> [a XmlTree XmlTree]           -- ^ arrows for making the preamble
+              -> [a XmlTree XmlTree]           -- ^ arrows for making the layers
+              -> a XmlTree XmlTree             -- ^ returns an xml arrow
+mkTcfDocument cfg preamble layers =
+  root  -- make a root node containing the XML-Decl, PIs and the xml root element
+  []    -- its attribute nodes
+  [ -- its child nodes
+    (mkqelem  -- make the xml root element
+      (mkQName "" "D-Spin" $ getTcfRootNamespace cfg)
+      [(sattr "xmlns" $ getTcfRootNamespace cfg)] -- attributes
+      [-- its child nodes
+        (mkqelem
+         (mkQName "" "MetaData" $ getTcfMetadataNamespace cfg)
+         [(sattr "xmlns" $ getTcfMetadataNamespace cfg)]
+         preamble
+        )
+      , (mkqelem
+         (mkQName "" "textCorpus" $ getTcfTextCorpusNamespace cfg)
+         [(sattr "xmlns" $ getTcfTextCorpusNamespace cfg)]
+         layers
+        )
+      ]
+    )
+  ]
