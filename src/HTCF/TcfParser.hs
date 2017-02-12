@@ -8,6 +8,8 @@ module HTCF.TcfParser
   ) where
 
 import Text.XML.HXT.Core
+import qualified Text.XML.HXT.DOM.XmlNode as XN
+import Data.Maybe
 
 import HTCF.TcfParserTypeDefs
 import HTCF.Position
@@ -61,12 +63,21 @@ mkTcfTextFromCharRef =
 -- | An arrow for parsing tags into the structure layer.
 mkTcfStructure :: IOSLA (XIOState [Int]) XmlTree TcfElement
 mkTcfStructure =
+  isElem >>>
   getQName &&&
-  arr (const 0) &&&
-  arr (const 0) &&&
+  arr (const 0) &&& -- start position in text layer
+  arr (length . collectText) &&& -- length in text layer
   getXmlPosition >>>
-  arr (\(qN, (tStart, (tEnd, xPos)))
-       -> TcfStructure qN tStart tEnd (fst xPos) (snd xPos))
+  arr (\(qN, (tStart, (tLength, xPos)))
+       -> TcfStructure qN tStart tLength (fst xPos) (snd xPos))
+
+-- | Collect all text nodes in the current subtree.
+collectText :: XmlTree -> String
+collectText (XN.NTree n cs)
+  | XN.isElem n = concatMap collectText cs
+  | XN.isText n = fromMaybe "" $ XN.getText n
+  | XN.isCharRef n = fromMaybe "" $ fmap (\i -> [toEnum i]) $ XN.getCharRef n
+  | otherwise = ""
 
 -- | An arrow for parsing line breaks and gerating a signal for the
 -- tokenizer.

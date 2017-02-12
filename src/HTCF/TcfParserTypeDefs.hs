@@ -9,6 +9,8 @@ module HTCF.TcfParserTypeDefs
   , getTcfText
   , getTextOffset
   , getSrcCharOffsets
+  , getSrcStartPos
+  , getSrcEndPos
   , serialize
   )
   where
@@ -26,7 +28,7 @@ data TcfElement =
   | TcfStructure                   -- ^ constituent of structure layer
   { qName :: QName                 -- ^ qualified name of tag
   , textStart :: TextPosition      -- ^ start position in text layer
-  , textEnd :: TextPosition        -- ^ end position in text layer
+  , textLength :: Int              -- ^ length in text layer
   , srcStart :: Maybe XmlPosition        -- ^ start position in source
   , srcEnd :: Maybe XmlPosition          -- ^ end position in end
   }
@@ -52,8 +54,8 @@ tcfTextLen _ = 0
 dupWithNewTextPos :: TcfElement -> TextPosition -> TcfElement
 dupWithNewTextPos (TcfText tx _ cPos) i =
   TcfText tx i cPos
-dupWithNewTextPos (TcfStructure qN _ _ xStart xEnd) i =
-  TcfStructure qN i 0 xStart xEnd
+dupWithNewTextPos (TcfStructure qN _ tLength xStart xEnd) i =
+  TcfStructure qN i tLength xStart xEnd
 dupWithNewTextPos (TcfLineBreak) _ = TcfLineBreak
 
 propagateOffsets :: [TcfElement] -> [TcfElement]
@@ -77,6 +79,16 @@ getTextOffset _ = 0
 getSrcCharOffsets :: TcfElement -> [((Maybe XmlPosition), (Maybe XmlPosition))]
 getSrcCharOffsets (TcfText _ _ charOffsets) = charOffsets
 getSrcCharOffsets _ = [(Nothing, Nothing)]
+
+getSrcStartPos :: TcfElement -> Maybe XmlPosition
+getSrcStartPos (TcfText _ _ charOffsets) = fst $ head charOffsets
+getSrcStartPos (TcfStructure _ _ _ s _) = s
+getSrcStartPos _ = Nothing
+
+getSrcEndPos :: TcfElement -> Maybe XmlPosition
+getSrcEndPos (TcfText _ _ charOffsets) = snd $ last charOffsets
+getSrcEndPos (TcfStructure _ _ _ _ e) = e
+getSrcEndPos _ = Nothing
 
 serialize :: TcfElement -> String
 serialize (TcfText t _ _) = t
