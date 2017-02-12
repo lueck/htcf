@@ -9,7 +9,8 @@ import HTCF.ConfigParser
 import HTCF.TokenLayer
 import HTCF.TextLayer
 
--- | Run the TCF reader in the IO monad.
+-- | Run the TCF reader in the IO monad. Use this as an example for
+-- your parser with extra layers.
 runTcfReader :: [Config] -> FilePath -> IO ([Text], [Token] {-, [SomethingElse]-})
 runTcfReader cfg fname = do
   tree <- runX (readDocument [withValidate no] fname >>>
