@@ -23,6 +23,7 @@ parseTextLayer :: (ArrowXml a) => [Config] -> a XmlTree Text
 parseTextLayer cfg =
   isElem >>> hasQName (mkNsName "text" $ getTcfTextCorpusNamespace cfg) >>>
   getChildren >>>
+  isText >>>
   getText >>> arr Text
 
 -- * Arrows for writing the tcf text layer.
