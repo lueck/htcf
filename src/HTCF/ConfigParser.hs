@@ -12,6 +12,7 @@ module HTCF.ConfigParser
   , getDroppedTrees
   , getTcfRootNamespace
   , getTcfTextCorpusNamespace
+  , getTcfMetadataNamespace
   , getTcfIdBase
   , setTcfIdBase
   , getTcfIdPrefixDelimiter
@@ -26,6 +27,7 @@ module HTCF.ConfigParser
   , getNoBreaks
   , defaultTcfRootNamespace
   , defaultTcfTextCorpusNamespace
+  , defaultTcfMetadataNamespace
   , defaultTcfIdBase
   , defaultTcfIdPrefixDelimiter
   , defaultTcfIdPrefixLength
@@ -66,6 +68,9 @@ data Config =
                                         -- node a TCF file
   | TcfTextCorpusNamespace String       -- ^ the namespace of the
                                         -- TextCorpus tag of a TCF
+                                        -- file
+  | TcfMetadataNamespace String         -- ^ the namespace of the meta
+                                        -- data (preamble) of a TCF
                                         -- file
   | TcfIdBase Int                       -- ^ The base of the IDs used in a TCf file
   | TcfIdPrefixDelimiter Char           -- ^ The character that
@@ -115,6 +120,11 @@ defaultTcfRootNamespace = "http://www.dspin.de/data"
 -- http://www.dspin.de/data/textcorpus
 defaultTcfTextCorpusNamespace :: String
 defaultTcfTextCorpusNamespace = "http://www.dspin.de/data/textcorpus"
+
+-- | Default value for the <MetaData> element of a TCF file:
+-- http://www.dspin.de/data/metadata
+defaultTcfMetadataNamespace :: String
+defaultTcfMetadataNamespace = "http://www.dspin.de/data/metadata"
 
 -- | Default value for the base of the numeric part of the IDs used in
 -- a TCF file: 10.
@@ -193,6 +203,14 @@ getTcfTextCorpusNamespace :: [Config] -> String
 getTcfTextCorpusNamespace [] = defaultTcfTextCorpusNamespace
 getTcfTextCorpusNamespace ((TcfTextCorpusNamespace ns):_) = ns
 getTcfTextCorpusNamespace (_:xs) = getTcfTextCorpusNamespace xs
+
+-- | Get the namespace of the <MetaData> element of a TCF file. If
+-- none is given in the config file, this defaults to
+-- 'defaultTcfMetadataNamespace'.
+getTcfMetadataNamespace :: [Config] -> String
+getTcfMetadataNamespace [] = defaultTcfMetadataNamespace
+getTcfMetadataNamespace ((TcfMetadataNamespace ns):_) = ns
+getTcfMetadataNamespace (_:xs) = getTcfMetadataNamespace xs
 
 -- | Get the base of the IDs used in a TCF file. Defaults to
 -- 'defaultTcfIdBase'.
@@ -305,6 +323,7 @@ parseConfig =
   pcMonth <+>
   pcTcfRootNamespace <+>
   pcTcfTextCorpusNamespace <+>
+  pcTcfMetadataNamespace <+>
   pcTcfIdBase <+>
   pcTcfIdPrefixDelimiter <+>
   pcTcfIdPrefixLength
@@ -383,6 +402,13 @@ pcTcfTextCorpusNamespace =
   hasName "tcfTextCorpusNamespace" >>>
   getAttrValue "namespace" >>>
   arr (TcfTextCorpusNamespace . defaultOnNull defaultTcfTextCorpusNamespace)
+
+pcTcfMetadataNamespace :: IOSArrow XmlTree Config
+pcTcfMetadataNamespace =
+  hasName "tcf" >>> getChildren >>>
+  hasName "tcfMetadataNamespace" >>>
+  getAttrValue "namespace" >>>
+  arr (TcfMetadataNamespace . defaultOnNull defaultTcfMetadataNamespace)
 
 pcTcfIdBase :: IOSArrow XmlTree Config
 pcTcfIdBase =
