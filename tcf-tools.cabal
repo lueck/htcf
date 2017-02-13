@@ -25,6 +25,7 @@ library
                    , HTCF.TextLayer
                    , HTCF.TokenLayer
                    , HTCF.Tokenizer
+                   , HTCF.StructureLayer
                    , HTCF.Utils
                    , HTCF.ReadTcf
                    , HTCF.WriteTcf
