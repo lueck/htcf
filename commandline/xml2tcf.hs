@@ -12,6 +12,7 @@ import HTCF.TcfParserTypeDefs
 import HTCF.TokenLayer
 import HTCF.Tokenizer
 import HTCF.TextLayer
+import HTCF.StructureLayer
 import HTCF.ArrowXml
 import HTCF.WriteTcf
 import HTCF.LineOffsets
@@ -66,13 +67,14 @@ run (Convert configFile abbrevFile outputMethod outputStructure fName) = do
              multi (parserArrow config)
             )
   let
-    text = writeTextLayer config $
-           concatMap getTcfText parsed
-    tokens = writeTokenLayer config $
-             tokenize (addAbbreviations (lines abbrevs) config) $
-             propagateOffsets parsed
-  tcf <- runTcfWriter config [{-preamble-}] [text, tokens]
-  --print $ propagateOffsets parsed
+    parsedOffsets = propagateOffsets parsed
+    tokens = tokenize (addAbbreviations (lines abbrevs) config) parsedOffsets
+    textLayer = writeTextLayer config $
+                concatMap getTcfText parsed
+    tokenLayer = writeTokenLayer config tokens
+    structureLayer = writeTextStructureLayer config $
+                     mkTextSpans tokens $ filter isTcfStructure parsedOffsets
+  tcf <- runTcfWriter config [{-preamble-}] [textLayer, tokenLayer, structureLayer]
   putStrLn tcf
   where
     parserArrow
