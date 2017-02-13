@@ -63,9 +63,10 @@ prop_textOffset (Positive i) = monadicIO $ do
     wd = getToken tok
   assert ((take (end-start+1) $ drop start textLayer) == wd)
 
--- | Testing source offsets with randomize token number
-prop_srcOffset :: Positive Int -> Property
-prop_srcOffset (Positive i) = monadicIO $ do
+-- | Testing source offsets with randomize token number. This test
+-- asserts correct word.
+prop_srcOffsetToken :: Positive Int -> Property
+prop_srcOffsetToken (Positive i) = monadicIO $ do
   parsed <- run (parseWithPos sampleFile)
   srcContents <- run (readFile sampleFile)
   let
@@ -78,9 +79,27 @@ prop_srcOffset (Positive i) = monadicIO $ do
     -- -1 because first char is !! 0. Is this right? And is it
     -- -consistent with text offsets? FIXME?
     srcTxt = take (end-start+1) $ drop (start) srcContents
-  assert ((srcContents !! start) `elem` ((head wd):"&"))  -- start char
-  assert ((srcContents !! end) `elem` ((last wd):";"))  -- end char
   assert ((srcTxt == wd) || ('&' `elem` srcTxt) || ('<' `elem` srcTxt)) -- all chars
+
+-- | Testing source offsets with randomize token number. This test
+-- assert correct start and end char of char ref at start or end of a
+-- token.
+prop_srcOffsetCharRef :: Positive Int -> Property
+prop_srcOffsetCharRef (Positive i) = monadicIO $ do
+  parsed <- run (parseWithPos sampleFile)
+  srcContents <- run (readFile sampleFile)
+  let
+    textLayer = concatMap getTcfText parsed
+    tokens = tokenize [] $ propagateOffsets parsed
+    tok = tokens !! (mod i $ length tokens) -- randomized token number
+    start = fromMaybe 0 $ getTokenStartSrcPos tok
+    end = fromMaybe 0 $ getTokenEndSrcPos tok
+    wd = getToken tok
+    -- -1 because first char is !! 0. Is this right? And is it
+    -- -consistent with text offsets? FIXME?
+    srcTxt = take (end-start+1) $ drop (start) srcContents
+  assert (((srcContents !! start) `elem` ((head wd):"&")) &&  -- start char
+          ((srcContents !! end) `elem` ((last wd):";")))  -- end char
 
 -- | Testing test offset with a fixed token number. This indicates,
 -- that we have not systematically lost any tokens.
