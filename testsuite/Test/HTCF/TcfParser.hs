@@ -8,13 +8,15 @@ import Text.XML.HXT.Core
 import Text.XML.HXT.Arrow.XmlState.RunIOStateArrow (runXIOState, initialState)
 import Data.Maybe
 
+import HTCF.ConfigParser
+import HTCF.ArrowXml
 import HTCF.TcfParserTypeDefs
 import HTCF.TcfParser
 import HTCF.LineOffsets
 import qualified HTCF.PosParser.ReadDocument as RD (readDocument)
 
-sampleFile = "doc/examples/heine_broken.TEI-P5.xml"
---sampleFile = "doc/examples/kant_aufklaerung_1784.TEI-P5.xml"
+--sampleFile = "doc/examples/heine_broken.TEI-P5.xml"
+sampleFile = "doc/examples/kant_aufklaerung_1784.TEI-P5.xml"
 
 -- | helper function
 parseWithoutPos :: FilePath -> IO [TcfElement]
@@ -59,19 +61,49 @@ prop_charPosLengthNoPos (Positive i) = monadicIO $ do
   assert ((length $ getTcfText txt) == (length $ getSrcCharOffsets txt))
 
 -- | Assert that the source offsets of the parsed structure elements
--- are correct by asserting < and > in the source.
-prop_assertTagsAtStructurePos :: Positive Int -> Property
-prop_assertTagsAtStructurePos (Positive i) = monadicIO $ do
+-- are correct by asserting < and > in the source. This test asserts the
+-- start tag.
+prop_assertStartTagAtStructurePos :: Positive Int -> Property
+prop_assertStartTagAtStructurePos (Positive i) = monadicIO $ do
   parsed <- run (parseWithPos sampleFile)
   src <- run (readFile sampleFile)
   let
     tcfStructures = filter isTcfStructure parsed
     structure = tcfStructures !! (mod i $ length tcfStructures) -- random
     start = getSrcStartPos structure
-    end = getSrcEndPos structure
-  assert (((src !! (fromMaybe 4 $ start)) == '<') || (isNothing start))
-  assert (((src !! (fromMaybe 0 $ end)) == '>') || (isNothing end))
+    startChar = src !! (fromMaybe 4 $ start)
+  monitor (counterexample
+           ("Failing start tag: Found \'" ++
+            (startChar:[]) ++
+            "\' instead of \'<\' at offset " ++
+            (show start) ++
+            " of " ++
+            sampleFile))
+  assert ((startChar == '<') || (isNothing start))
 
+-- | Assert that the source offsets of the parsed structure elements
+-- are correct by asserting < and > in the source. This test asserts
+-- the end tag.
+prop_assertEndTagAtStructurePos :: Positive Int -> Property
+prop_assertEndTagAtStructurePos (Positive i) = monadicIO $ do
+  parsed <- run (parseWithPos sampleFile)
+  src <- run (readFile sampleFile)
+  let
+    tcfStructures = filter isTcfStructure parsed
+    structure = tcfStructures !! (mod i $ length tcfStructures) -- random
+    end = getSrcEndPos structure
+    endChar = src !! (fromMaybe 0 $ end)
+  monitor (counterexample
+           ("Failing end tag: Found \'" ++
+            (endChar:[]) ++
+            "\' instead of \'>\' at offset " ++
+            (show end) ++
+            " of " ++
+            sampleFile))
+  assert ((endChar == '>') || (isNothing end))
+
+
+{-
 -- | Testing for exact number of tcf text elements. This asserts that
 -- mkTcfElement produces elements regardless of presence of source
 -- positions. FIXME: This may break with implementation of hxt's
@@ -95,3 +127,4 @@ test_tcfCompareTexts = do
     ((lenText parsedWithPos) >= (10 + (lenText parsedWithoutPos)))
     where
       lenText = length . filter isTcfText
+-}

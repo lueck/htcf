@@ -421,7 +421,7 @@ elementRest (n, al, start)
     = ( do
         XT.checkString "/>"
         end <- getPosition
-        return $ mkPosElement n start end al []
+        return $ mkPosElement n (corPos start (-2)) (corPos end (-2)) al []
       )
       <|>
       ( do
