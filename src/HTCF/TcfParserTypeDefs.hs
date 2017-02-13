@@ -7,7 +7,9 @@ module HTCF.TcfParserTypeDefs
   , dupWithNewTextPos
   , propagateOffsets
   , getTcfText
+  , getTcfQName
   , getTextOffset
+  , getTextLength
   , getSrcCharOffsets
   , getSrcStartPos
   , getSrcEndPos
@@ -71,10 +73,19 @@ getTcfText :: TcfElement -> String
 getTcfText (TcfText t _ _) = t
 getTcfText _ = ""
 
+getTcfQName :: TcfElement -> Maybe QName
+getTcfQName (TcfStructure qn _ _ _ _) = Just qn
+getTcfQName _ = Nothing
+
 getTextOffset :: TcfElement -> TextPosition
 getTextOffset (TcfText _ p _) = p
 getTextOffset (TcfStructure _ p _ _ _) = p
 getTextOffset _ = 0
+
+getTextLength :: TcfElement -> Int
+getTextLength (TcfText t _ _) = length t
+getTextLength (TcfStructure _ _ l _ _) = l
+getTextLength _ = 0
 
 getSrcCharOffsets :: TcfElement -> [((Maybe XmlPosition), (Maybe XmlPosition))]
 getSrcCharOffsets (TcfText _ _ charOffsets) = charOffsets
