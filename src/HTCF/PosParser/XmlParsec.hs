@@ -76,7 +76,19 @@ import HTCF.Position (mkPositionNode, mkPositionAttrs)
 
 -- import Debug.Trace
 
-corPos :: SourcePos -> Int -> SourcePos
+-- | Correct the source position by adding a value to the column
+-- field.
+--
+-- This breaks the (line, column) representation, if column is less or
+-- equal 0 after emendation. But this does not matter if calculate
+-- character offsets from it by evaluating (lineOffsets !! (line - 1)
+-- + column, because of the associativness of add. We can also
+-- calculate correct (line, column) tuples with column > 0 from the
+-- character offset, because the mapping of (line, column) tuples to
+-- character offsets is bijective.
+corPos :: SourcePos   -- ^ source position to be corrected
+       -> Int         -- ^ emendation value
+       -> SourcePos   -- ^ the returned position
 corPos p i = setSourceColumn p ((sourceColumn p)+i)
 
 mkPosText :: SourcePos -> SourcePos -> String -> XmlTree
@@ -103,10 +115,8 @@ charData' =  do
   start <- getPosition
   t <- XT.allBut1 many1 (\ c -> not (c `elem` "<&")) "]]>"
   end <- getPosition
-  -- correct position: Start: SourcePos does not know column 0, so
-  -- -1. End: The ending char was alread consumed (-1) and ibid.,
-  -- results in -2.
-  return (mkPosText (corPos start (-1)) (corPos end (-2)) t)
+  -- correct end position: The ending char was alread consumed: -1.
+  return (mkPosText start (corPos end (-1)) t)
 
 
 -- ------------------------------------------------------------
@@ -125,7 +135,7 @@ charRefT = do
   i <- XT.charRef
   end <- getPosition
   -- correct position: cf. char'
-  return (mkPosCharRef i (corPos start (-1)) (corPos end (-2)))
+  return (mkPosCharRef i start (corPos end (-1)))
 
 entityRefT :: XParser s XmlTree
 entityRefT = do
@@ -135,8 +145,8 @@ entityRefT = do
   return $ ref n start end
   where
     -- correct position: cf. char'
-    ref (XN.NTree (XEntityRef n) _) s e = mkTree (XN.mkEntityRef n) [(mkPositionNode (corPos s (-1)) (corPos e (-2)))]
-    ref (XN.NTree (XCharRef i) _) s e = mkPosCharRef i (corPos s (-1)) (corPos e (-2))
+    ref (XN.NTree (XEntityRef n) _) s e = mkTree (XN.mkEntityRef n) [(mkPositionNode s (corPos e (-1)))]
+    ref (XN.NTree (XCharRef i) _) s e = mkPosCharRef i s (corPos e (-1))
 
 -- ------------------------------------------------------------
 --
@@ -421,7 +431,7 @@ elementRest (n, al, start)
     = ( do
         XT.checkString "/>"
         end <- getPosition
-        return $ mkPosElement n (corPos start (-2)) (corPos end (-2)) al []
+        return $ mkPosElement n (corPos start (-1)) (corPos end (-1)) al []
       )
       <|>
       ( do
@@ -429,11 +439,10 @@ elementRest (n, al, start)
         c <- content
         eTag n
         end <- getPosition
-        -- correct position: start: -2: the opening < was already
-        -- consumed (-1) and SourcePos does not now column 0 (-1),
-        -- results in -2. end: -2: the closing > was already consumed
-        -- (-1) and ibid.
-        return $ mkPosElement n (corPos start (-2)) (corPos end (-2)) al c
+        -- Correcting position: Start: the opening < was already
+        -- consumed, so -1. End: the closing > was already
+        -- consumed: -1.
+        return $ mkPosElement n (corPos start (-1)) (corPos end (-1)) al c
       )
       <?> "proper attribute list followed by \"/>\" or \">\""
 

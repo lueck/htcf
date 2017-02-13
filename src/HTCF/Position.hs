@@ -62,6 +62,13 @@ mkPositionNode start end =
 -- a tuple of Just start and end xml positions. If no position if
 -- found, a tuple of Nothing is returned. The list of line offsets is
 -- expected to be in user state.
+--
+-- The parsec parser returns tuple (line, column) for each
+-- position. With the lineOffsets in the user state we can calculate
+-- character offsets from it: (lineOffset !! (line-1)) + column. Still
+-- we have to emend this by -1, because parsecs position starts with
+-- column 1, but does not know column 0. But the first char in the
+-- file has the character offset of 0, not 1.
 getXmlPosition :: IOSLA (XIOState [Int]) XmlTree ((Maybe XmlPosition), (Maybe XmlPosition))
 getXmlPosition =
   -- get PI with position attributes (XText, XCharRef)
@@ -74,8 +81,8 @@ getXmlPosition =
   where
     getXmlPos _ [] = (Nothing, Nothing) -- redundant, because length tested
     getXmlPos ((Just sL), (Just sC), (Just eL), (Just eC)) lineOffsets
-      | (eL-1) <= length lineOffsets = ( (Just ((lineOffsets !! (sL-1)) + sC))
-                                       , (Just ((lineOffsets !! (eL-1)) + eC)))
+      | (eL-1) <= length lineOffsets = ( (Just ((lineOffsets !! (sL-1)) + sC - 1))
+                                       , (Just ((lineOffsets !! (eL-1)) + eC - 1)))
       | otherwise = (Nothing, Nothing)
     getXmlPos _ _ = (Nothing, Nothing)
 
