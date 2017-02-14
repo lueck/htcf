@@ -9,6 +9,7 @@
 *.hp
 *.prof
 *.ps
+*.svg
 
 dist
 .HTF
