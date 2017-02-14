@@ -1,5 +1,8 @@
 {-# LANGUAGE CPP, FlexibleContexts #-}
+module Main where
+
 import System.IO
+import System.Exit
 import Options.Applicative
 import Data.Monoid ((<>))
 import Text.XML.HXT.Core
@@ -23,6 +26,7 @@ data Convert =
   Convert { configFile :: Maybe String
           , abbrevFile :: Maybe FilePath
           , outputStructure :: Bool
+          , outFile :: Maybe String
           , inFile :: String
           }
 
@@ -41,10 +45,14 @@ convert_ = Convert
   <*> flag True False (short 'S'
                        <> long "no-structure"
                        <> help "Do not output structure layer.")
+  <*> optional (strOption (short 'o'
+                            <> long "output"
+                            <> help "Output file. If left, the TCF is printed to stdout."
+                            <> metavar "OUTFILE" ))
   <*> argument str (metavar "INFILE")
 
 run :: Convert -> IO ()
-run (Convert configFile abbrevFile outputStructure fName) = do
+run (Convert configFile abbrevFile outputStructure outFile fName) = do
   config <- runConfigParser $ fromMaybe "config.xml" configFile
   abbrevs <- readFile $ fromMaybe "abbrevs.txt" abbrevFile
   lineOffsets <- runLineOffsetParser fName
@@ -66,8 +74,11 @@ run (Convert configFile abbrevFile outputStructure fName) = do
     tokenLayer = writeTokenLayer config tokens
     structureLayer = writeTextStructureLayer config $
                      mkTextSpans tokens $ filter isTcfStructure parsedOffsets
-  tcf <- runTcfWriter config [{-preamble-}] [textLayer, tokenLayer, structureLayer]
-  putStrLn tcf
+  [rc] <- runTcfWriter config (fromMaybe "" outFile) [{-preamble-}] [textLayer, tokenLayer, structureLayer]
+  exitWith (if rc >= c_err
+             then ExitFailure 1
+             else ExitSuccess
+           )
   where
     parserArrow
       | outputStructure = mkTcfElement

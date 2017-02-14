@@ -8,14 +8,16 @@ import HTCF.ConfigParser
 
 -- | Run the tcf writer in the IO monad.
 runTcfWriter :: [Config]                              -- ^ the config
+             -> FilePath                              -- ^ the output file or \"\" for stdout
              -> [IOSLA (XIOState ()) XmlTree XmlTree] -- ^ arrows for making the preamble
              -> [IOSLA (XIOState ()) XmlTree XmlTree] -- ^ arrows for making the layers
-             -> IO String
-runTcfWriter cfg preamble layers = do
+             -> IO [Int]
+runTcfWriter cfg fName preamble layers = do
   rc <- runX (mkTcfDocument cfg preamble layers >>>
-              writeDocumentToString [withIndent yes])
-  return $ concat rc
-
+              writeDocument [withIndent yes] fName >>>
+              getErrStatus
+             )
+  return rc
 
 -- | Arrow for generating the TCF file.
 mkTcfDocument :: (ArrowXml a) => [Config]      -- ^ the config
