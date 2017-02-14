@@ -3,6 +3,9 @@ module HTCF.Utils
   , readBase
   , readBasePrefixed
   , maybeFun
+  , guessBase
+  , commonPrefix
+  , collectIds
   ) where
 
 import qualified Data.ByteString.Char8 as C
@@ -10,6 +13,8 @@ import qualified Numeric as N
 import Data.Char (ord, digitToInt, isDigit)
 import Data.List
 import Data.Maybe
+import Text.XML.HXT.Core
+import qualified Text.XML.HXT.DOM.XmlNode as XN
 
 import HTCF.ConfigParser
 
@@ -79,3 +84,27 @@ maybeFun :: (a -> a)        -- ^ default function
 maybeFun defaultFun justFun maybee
   | isNothing maybee = defaultFun
   | otherwise = justFun $ fromJust maybee
+
+-- | guess the base from a list of string encoded numbers by getting
+-- the count of different tokens. Take care to pass enough data!
+guessBase :: [[Char]] -> Int
+guessBase =
+  length . (foldl (\acc x -> if (x `elem` acc) then acc else (x:acc)) []) . concat
+
+-- | Get the common prefix of a list of strings (or lists in general).
+commonPrefix :: (Eq a) => [[a]] -> [a]
+commonPrefix = foldl1 commonPrefixPair
+
+commonPrefixPair :: (Eq e) => [e] -> [e] -> [e]
+commonPrefixPair _ [] = []
+commonPrefixPair [] _ = []
+commonPrefixPair (x:xs) (y:ys)
+  | x == y    = x : commonPrefixPair xs ys
+  | otherwise = []
+
+-- | Collect IDs from a subtree.
+collectIds :: XmlTree -> [String]
+collectIds (XN.NTree n cs)
+  | XN.isElem n = (fromMaybe [] $ fmap (concatMap collectIds) $ XN.getAttrl n) ++ (concatMap collectIds cs)
+  | XN.isAttr n && (XN.getLocalPart n == Just "id") = (fromMaybe "" $ XN.getText $ head cs):[]
+  | otherwise = concatMap collectIds cs

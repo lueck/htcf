@@ -10,6 +10,7 @@ module HTCF.TokenLayer
   , getTokenEndSrcPos
   , parseTokens
   , parseToken
+  , guessAboutTokenId
   , writeTokenLayer
   ) where
 
@@ -71,14 +72,15 @@ getTokenEndSrcPos (Token _ _ _ _ _ e) = e
 
 -- * Arrows for reading a tcf token layer.
 
-parseTokens :: (ArrowXml a) => [Config] -> a XmlTree Token
-parseTokens cfg =
+parseTokens :: (ArrowXml a) => [Config] -> Int -> Int -> a XmlTree Token
+parseTokens cfg pfxLen base =
+  --traceMsg 1 ("Parsing token layer with prefix length " ++ (show pfxLen) ++ " and base " ++ (show base)) >>> 
   isElem >>> hasQName (mkNsName "tokens" $ getTcfTextCorpusNamespace cfg) >>>
   getChildren >>>
-  parseToken cfg
+  parseToken cfg pfxLen base
 
-parseToken :: (ArrowXml a) => [Config] -> a XmlTree Token
-parseToken cfg =
+parseToken :: (ArrowXml a) => [Config] -> Int -> Int -> a XmlTree Token
+parseToken cfg pfxLen base =
   hasQName (mkNsName "token" $ getTcfTextCorpusNamespace cfg) >>>
   (getChildren >>> getText) &&&
   getAttrValue "ID" &&&
@@ -89,12 +91,20 @@ parseToken cfg =
   arr (\(t, (idd, (s, (e, (sS, sE))))) ->
          (Token
            t
-           (readBasePrefixed cfg idd)
+           (readBase base $ drop pfxLen idd)
            (readIntMaybe $ Just s)
            (readIntMaybe $ Just e)
            (readIntMaybe $ Just sS)
            (readIntMaybe $ Just sE)))
 {-# INLINE parseToken #-}
+
+guessAboutTokenId :: [Config] -> XmlTrees -> IO (Int, Int)
+guessAboutTokenId cfg tree = do
+  ids <- runX (constL tree //>
+               multi (isElem >>> hasQName (mkNsName "token" $ getTcfTextCorpusNamespace cfg) >>>
+               getAttrValue "ID"))
+  let pfxLen = length $ commonPrefix $ take 32 $ filter (/= "") ids
+  return (pfxLen, (guessBase $ map (drop pfxLen) ids))
 
 -- * Arrows for writing the tcf token layer.
 
@@ -109,10 +119,16 @@ writeTokenLayer cfg ts =
    (map writeToken ts))
   where
     ns = getTcfTextCorpusNamespace cfg
+    pfx = getTcfTokenIdPrefix cfg
     maybeAttr n val = maybeToList $ fmap ((sattr n) . show) val
+    maybeStrAttr n val = maybeToList $ fmap (sattr n) val
     writeToken :: (ArrowXml a) => Token -> a XmlTree XmlTree
     writeToken (Token t idd start end sStart sEnd) =
       (mkqelem
        (mkNsName "token" ns)
-       ((maybeAttr "id" idd) ++ (maybeAttr "start" start) ++ (maybeAttr "end" end) ++ (maybeAttr "srcStart" sStart) ++ (maybeAttr "srcEnd" sEnd))
+       ((maybeStrAttr "id" (fmap ((pfx++) . show) idd)) ++
+        (maybeAttr "start" start) ++
+        (maybeAttr "end" end) ++
+        (maybeAttr "srcStart" sStart) ++
+        (maybeAttr "srcEnd" sEnd))
        [(txt t)])

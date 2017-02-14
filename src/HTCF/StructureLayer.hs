@@ -112,6 +112,7 @@ writeTextStructureLayer cfg spans =
    (map writeTextSpan spans))
    where
      ns = getTcfTextCorpusNamespace cfg
+     pfx = getTcfTokenIdPrefix cfg
      maybeAttr n val = maybeToList $ fmap ((sattr n) . show) val
      maybeStrAttr n val = maybeToList $ fmap (sattr n) val
      writeTextSpan :: (ArrowXml a) => TextStructure -> a XmlTree XmlTree
@@ -120,8 +121,8 @@ writeTextStructureLayer cfg spans =
         (mkNsName "textspan" ns)
         ((maybeStrAttr "type" typ) ++
          (maybeStrAttr "namespace" uri) ++
-         (maybeAttr "start" sTok) ++
-         (maybeAttr "end" eTok) ++
+         (maybeStrAttr "start" (fmap ((pfx++) . show) sTok)) ++
+         (maybeStrAttr "end" (fmap ((pfx++) . show) eTok)) ++
          (maybeAttr "textStart" sText) ++
          (maybeAttr "textEnd" eText) ++
          (maybeAttr "srcStart" sSrc) ++

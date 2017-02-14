@@ -16,10 +16,11 @@ runTcfReader cfg fname = do
   tree <- runX (readDocument [withValidate no] fname >>>
                 propagateNamespaces
                )
+  (tokenIdPfx, idBase) <- guessAboutTokenId cfg tree
   text <- runX (constL tree //>
                 parseTextLayer cfg)
   tokens <- runX (constL tree //>
-                  parseTokens cfg)
+                  parseTokens cfg tokenIdPfx idBase)
   {-somethingElse <- runX (constL tree //>
                            parseSomethingElse)-}
   return (text, tokens {-, somethingElse -})
