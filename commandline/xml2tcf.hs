@@ -22,7 +22,6 @@ import qualified HTCF.PosParser.ReadDocument as RD (readDocument)
 data Convert =
   Convert { configFile :: Maybe String
           , abbrevFile :: Maybe FilePath
-          , outputMethod :: Maybe OutputMethod
           , outputStructure :: Bool
           , inFile :: String
           }
@@ -39,20 +38,13 @@ convert_ = Convert
                             <> long "abbrevs"
                             <> help "Specify a abbreviations file. The file is expected to be plain text with one abbreviation per line. Dots shoult not be in there. Defaults to abbrevs.txt in the working directory."
                             <> metavar "ABBREVFILE" ))
-  <*> optional ((flag' Raw (short 'r'
-                             <> long "raw"
-                             <> help "Output in raw format."))
-                <|>
-                (flag' PrettyList (short 'u'
-                                    <> long "human"
-                                    <> help "Output formatted human readable.")))
   <*> flag True False (short 'S'
-                       <> long "-no-structure"
+                       <> long "no-structure"
                        <> help "Do not output structure layer.")
   <*> argument str (metavar "INFILE")
 
 run :: Convert -> IO ()
-run (Convert configFile abbrevFile outputMethod outputStructure fName) = do
+run (Convert configFile abbrevFile outputStructure fName) = do
   config <- runConfigParser $ fromMaybe "config.xml" configFile
   abbrevs <- readFile $ fromMaybe "abbrevs.txt" abbrevFile
   lineOffsets <- runLineOffsetParser fName
@@ -85,5 +77,5 @@ main :: IO ()
 main = execParser opts >>= run
   where opts = info (helper <*> convert_)
           ( fullDesc
-            <> progDesc "Convert an XML file to TCF, the Text Corpus Format."
-            <> header "xml2tcf - convert an XML file to TCF." )
+            <> progDesc "xml2tcf generates a TCF file from XML input. TCF is the Text Corpus Format defined for WebLicht."
+            <> header "xml2tcf - generate TCF from XML input." )
