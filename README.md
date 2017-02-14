@@ -13,13 +13,13 @@ input.
 
 `htcf` provides the `xml2tcf` commandline program that takes an XML
 input file, e.g. in TEI P5 format, and generates TCF layers from
-it. What is special about `xml2tcf` is that it does not only provide a
-start and end character offsets of the tokens in relation to the text
-layer, but also in relation to the source file form the input. These
-offsets are provided in all layers, where it makes sense: e.g. in the
-tokens layer and in the text structure layer. This makes it possible
-to interrelate the TCF data to semantic annotations that were made to
-the input file in a standoff manner.
+it. `xml2tcf` has a fancy feature: It does not only provide a start
+and end character offsets of the tokens in relation to the text layer,
+but also in relation to the source file form the input. These offsets
+are provided in all layers, where it makes sense, e.g. in the tokens
+layer and in the text structure layer. This makes it possible to
+interrelate the TCF data to semantic annotations that were made to the
+input file in a standoff manner.
 
 `htcf` also provides a taxi for setting TCF data over to JSON, SQL or
 raw haskell data: the `readtcf` commandline program. Currently it only
@@ -38,13 +38,17 @@ outputs raw haskell data.
 
 # Installation #
 
-	stack setup
+[`stack`](https://docs.haskellstack.org), the haskell build tool, is
+required for installation. After cloning `htcf` from github, `cd` into
+the working directory and run `stack` like follows.
 
-	stack build
-	
-	stack exec -- xml2tcf <INPUT.XML>
+	$ stack setup
+	$ stack build
 
-    stack exec -- readtcf <INPUT.TCF>
+Have fun with
+
+	$ stack exec -- xml2tcf <INPUT.XML>
+    $ stack exec -- readtcf <INPUT.TCF>
 
 
 # xml2tcf #
@@ -69,6 +73,9 @@ Available options:
   -S,--no-structure        Do not output structure layer.
 </code></pre>
 
+`htcf` provides a [`config.xml`](config.xml) as a reasonable config
+for parsing a TEI file and [`abbrevs.txt`](abbrevs.txt) as a starting
+point for abbreviations, used to configure the tokenizer.
 
 # License #
 
