@@ -5,8 +5,16 @@
 *.hi
 *.o
 
+# profiling
+*.hp
+*.prof
+*.ps
+
 dist
 .HTF
 .cabal-sandbox
 cabal.sandbox.config
 .stack-work
+
+doc/examples/*TEI-P5.xml
+doc/examples/*tcf.xml
