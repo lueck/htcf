@@ -15,7 +15,7 @@ import HTCF.TcfParser
 import HTCF.LineOffsets
 import qualified HTCF.PosParser.ReadDocument as RD (readDocument)
 
---sampleFile = "doc/examples/heine_broken.TEI-P5.xml"
+--sampleFile = "doc/examples/heine_brocken.TEI-P5.xml"
 sampleFile = "doc/examples/kant_aufklaerung_1784.TEI-P5.xml"
 
 -- | helper function
