@@ -68,7 +68,7 @@ and put it into the `doc/examples` directory. Then run the tests.
 xml2tcf - generate TCF from XML input.
 
 Usage: xml2tcf [-c|--config CONFIGFILE] [-a|--abbrevs ABBREVFILE]
-               [-S|--no-structure] INFILE
+               [-S|--no-structure] [-o|--output OUTFILE] INFILE
   xml2tcf generates a TCF file from XML input. TCF is the Text Corpus Format
   defined for WebLicht.
 
@@ -81,6 +81,7 @@ Available options:
                            shoult not be in there. Defaults to abbrevs.txt in
                            the working directory.
   -S,--no-structure        Do not output structure layer.
+  -o,--output OUTFILE      Output file. If left, the TCF is printed to stdout.
 </code></pre>
 
 `htcf` provides a [`config.xml`](config.xml) as a reasonable config
