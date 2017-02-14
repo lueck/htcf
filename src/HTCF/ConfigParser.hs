@@ -15,6 +15,7 @@ module HTCF.ConfigParser
   , getTcfMetadataNamespace
   , getTcfIdBase
   , setTcfIdBase
+  , getTcfTokenIdPrefix
   , getTcfIdPrefixDelimiter
   , getTcfIdPrefixLength
   , setTcfIdPrefixLength
@@ -29,6 +30,7 @@ module HTCF.ConfigParser
   , defaultTcfTextCorpusNamespace
   , defaultTcfMetadataNamespace
   , defaultTcfIdBase
+  , defaultTcfTokenIdPrefix
   , defaultTcfIdPrefixDelimiter
   , defaultTcfIdPrefixLength
   , defaultTcfIdUnprefixMethod
@@ -44,6 +46,7 @@ module HTCF.ConfigParser
   , pcMonth
   , pcTcfTextCorpusNamespace
   , pcTcfIdBase
+  , pcTcfTokenIdPrefix
   , pcTcfIdPrefixDelimiter
   , pcTcfIdPrefixLength
   ) where
@@ -72,7 +75,10 @@ data Config =
   | TcfMetadataNamespace String         -- ^ the namespace of the meta
                                         -- data (preamble) of a TCF
                                         -- file
-  | TcfIdBase Int                       -- ^ The base of the IDs used in a TCf file
+  | TcfIdBase Int                       -- ^ The base of the IDs used
+                                        -- in a TCF file
+  | TcfTokenIdPrefix String             -- ^ The prefix of the token
+                                        -- IDs used in a TCF file
   | TcfIdPrefixDelimiter Char           -- ^ The character that
                                         -- delimits the prefix from
                                         -- the number part in a ID
@@ -130,6 +136,9 @@ defaultTcfMetadataNamespace = "http://www.dspin.de/data/metadata"
 -- a TCF file: 10.
 defaultTcfIdBase :: Int
 defaultTcfIdBase = 10
+
+defaultTcfTokenIdPrefix :: String
+defaultTcfTokenIdPrefix = "t_"
 
 -- | Default value for the delimiter between the prefix part and the
 -- numeric part of IDs used in a TCF file: \'_\'.
@@ -218,6 +227,13 @@ getTcfIdBase :: [Config] -> Int
 getTcfIdBase [] = defaultTcfIdBase
 getTcfIdBase ((TcfIdBase b):_) = b
 getTcfIdBase (_:xs) = getTcfIdBase xs
+
+-- | Get the prefix of the token IDs in a TCF file. Defaults to
+-- 'defaultTcfTokenIdPrefix'.
+getTcfTokenIdPrefix :: [Config] -> String
+getTcfTokenIdPrefix [] = defaultTcfTokenIdPrefix
+getTcfTokenIdPrefix ((TcfTokenIdPrefix p):_) = p
+getTcfTokenIdPrefix (_:xs) = getTcfTokenIdPrefix xs
 
 -- | Get the delimiter, that separates the prefix from a numeric part
 -- of an ID used in a TCF file. Defaults to
@@ -325,6 +341,7 @@ parseConfig =
   pcTcfTextCorpusNamespace <+>
   pcTcfMetadataNamespace <+>
   pcTcfIdBase <+>
+  pcTcfTokenIdPrefix <+>
   pcTcfIdPrefixDelimiter <+>
   pcTcfIdPrefixLength
 
@@ -415,6 +432,12 @@ pcTcfIdBase =
   hasName "tcf" >>> getChildren >>>
   hasName "tcfIdBase" >>>   getAttrValue "base" >>>
   arr (TcfIdBase . fromMaybe defaultTcfIdBase . fmap fst . C.readInt . C.pack) 
+
+pcTcfTokenIdPrefix :: IOSArrow XmlTree Config
+pcTcfTokenIdPrefix =
+  hasName "tcf" >>> getChildren >>>
+  hasName "tokenIdPrefix" >>> getAttrValue "prefix" >>>
+  arr (TcfTokenIdPrefix . defaultOnNull defaultTcfTokenIdPrefix)
 
 pcTcfIdPrefixDelimiter :: IOSArrow XmlTree Config
 pcTcfIdPrefixDelimiter =
