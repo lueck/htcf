@@ -64,11 +64,19 @@ nthWordStart spacesP n s = spacesPlusLetters + (nthWordStart spacesP (n-1) $ dro
 tokenize :: [Config] -> [TcfElement] -> [Token]
 tokenize cfg tcf = tokenize' 1 tcf
   where
+    -- get configuration aspects
+    nonBreakingChars = getNoBreaks cfg
+    mkSingleDigitOrdinalP = singleDigitOrdinalP cfg
+    hyphens = getHyphens cfg
+    mk1CharAbbrevP = abbrev1CharTokenP cfg
+    months = getMonths cfg
+    abbrevs = map (++ ".") $ getAbbreviations cfg
+
     -- We call _break_ a separating character.
     isBreak :: Char -> Bool
     isBreak c
-      | c `elem` (getHyphens cfg) = False  -- hyphens do not separate tokens
-      | c `elem` (getNoBreaks cfg) = False -- non-breaking characters from config
+      | c `elem` hyphens = False  -- hyphens do not separate tokens
+      | c `elem` nonBreakingChars = False -- non-breaking characters from config
       | otherwise = isSpace c || isPunctuation c -- spaces and punctuation do
     hasBreak :: String -> Bool
     -- FIXME: 'any' from Data.List may be faster.
@@ -76,11 +84,10 @@ tokenize cfg tcf = tokenize' 1 tcf
 
     isAbbrev :: String -> Bool
     -- the abbreviations from the config have not dot.
-    isAbbrev str = str `elem` (map (++ ".") $ getAbbreviations cfg)
+    isAbbrev str = str `elem` abbrevs
 
     isLitMonthAbbrev :: String -> Bool
-    isLitMonthAbbrev = isRealAbbrev (getMonths cfg)
-
+    isLitMonthAbbrev = isRealAbbrev months
 
     mkToken :: String -- the token
             -> Int -- the token ID
@@ -183,7 +190,7 @@ tokenize cfg tcf = tokenize' 1 tcf
     -- Drop linebreaks that were not preceded by a hyphen
     tokenize' i ((TcfLineBreak):xs) = tokenize' i xs
     tokenize' i (x@(TcfText t _ _):TcfLineBreak:xs)
-      | (not $ null t) && (not $ ((last t) `elem` (getHyphens cfg)))
+      | (not $ null t) && (not $ ((last t) `elem` hyphens))
       = tokenize' i (x:xs)
     
     -- Hyphenation Case 1: Lines are enclosed in line-elements,
@@ -196,7 +203,7 @@ tokenize cfg tcf = tokenize' 1 tcf
     tokenize' i (x1@(TcfText t1 _ _):(TcfText t2 _ _):(TcfLineBreak):xs)
       | (not $ null t1) && -- first text must be non-empty
         (not $ hasBreak t1) && -- may there be trailing whitespace?
-        (elem (last t1) $ getHyphens cfg) && -- trailing hyphen in t1
+        ((last t1) `elem` hyphens) && -- trailing hyphen in t1
         (null $ dropWhile isSpace t2) -- drop white space node after linebreak
       = tokenize' i (x1:(TcfLineBreak):xs)
 
@@ -217,7 +224,7 @@ tokenize cfg tcf = tokenize' 1 tcf
     tokenize' i (x1@(TcfText t1 _ _):(TcfLineBreak):x2@(TcfText t2 _ _):xs)
       | (not $ null t1) && -- first text must be non-empty
         (not $ hasBreak t1) && -- first text is a word. May there be trailing whitespace?
-        (elem (last t1) $ getHyphens cfg) -- trailing hyphen in first text
+        ((last t1) `elem` hyphens) -- trailing hyphen in first text
       = tokenize' i ((TcfText
                       ((init t1)++(take letters $ drop spaces t2))
                       (getTextOffset x1)
@@ -250,8 +257,7 @@ tokenize cfg tcf = tokenize' 1 tcf
       -- Abbreviations
       
       -- [a-zA-Z]\.: one letter followed be dot
-      | (isLetter t) && (not $ null ts) && (head ts) == '.' &&
-        (abbrev1CharTokenP cfg)
+      | mk1CharAbbrevP && (isLetter t) && (not $ null ts) && (head ts) == '.'
       = (mkToken (t:".") i x 0)
         : (tokenize' (i+1) ((mkText x 2) : xs))
       -- abbrev: next word lower case
@@ -283,7 +289,7 @@ tokenize cfg tcf = tokenize' 1 tcf
       -- tokens. FIXME: german date format.
       | length wds >= 2 &&
           (isNumDay $ head wds) &&      -- numeric day
-          ((take sndWdLen' $ wds !! 1) `elem` (getMonths cfg))     -- literal month
+          ((take sndWdLen' $ wds !! 1) `elem` months)     -- literal month
       = (mkToken (head wds) i x 0)
         : (mkToken (take sndWdLen' (wds !! 1)) (i+1) x sndWdStart)
         : (tokenize' (i+2) ((mkText x (sndWdStart+sndWdLen')) : xs))
@@ -294,8 +300,7 @@ tokenize cfg tcf = tokenize' 1 tcf
         : (tokenize' (i+1) ((mkText x fstWdLen) : xs))
 
       -- [0-9]\.: one digit followed by dot
-      | (isDigit t) && (not $ null ts) && (head ts) == '.' &&
-        (singleDigitOrdinalP cfg)
+      | mkSingleDigitOrdinalP && (isDigit t) && (not $ null ts) && (head ts) == '.'
       = (mkToken (t:".") i x 0)
         : (tokenize' (i+1) ((mkText x 2) : xs))
 
