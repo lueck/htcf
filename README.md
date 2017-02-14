@@ -33,7 +33,7 @@ outputs raw haskell data.
 | text           | yes            | yes             | yes            | yes            |
 | tokens         | yes            | yes             | yes            | yes            |
 | text structure | no             | yes             | yes            | no             |
-<code></pre>
+</code></pre>
 
 
 # Installation #
