@@ -50,6 +50,16 @@ Have fun with
 	$ stack exec -- xml2tcf <INPUT.XML>
     $ stack exec -- readtcf <INPUT.TCF>
 
+# Tests #
+
+Some `QuickCheck` tests only make sense with real world XML input. They
+need a TEI file from Deutsches Textarchiv which is not included in
+this repository due to license conditions. But you can download
+[Kants *Was ist Aufklaerung?*](http://www.deutschestextarchiv.de/book/download_xml/kant_aufklaerung_1784)
+and put it into the `doc/examples` directory. Then run the tests.
+
+    $ stack test
+
 
 # xml2tcf #
 
