@@ -2,6 +2,7 @@ module HTCF.Utils
   ( readIntMaybe
   , readBase
   , readBasePrefixed
+  , writeBase
   , maybeFun
   , guessBase
   , commonPrefix
@@ -10,7 +11,7 @@ module HTCF.Utils
 
 import qualified Data.ByteString.Char8 as C
 import qualified Numeric as N
-import Data.Char (ord, digitToInt, isDigit)
+import Data.Char (ord, digitToInt, isDigit, intToDigit, chr)
 import Data.List
 import Data.Maybe
 import Text.XML.HXT.Core
@@ -68,6 +69,18 @@ readBasePrefixed cfg str
     pxd = getTcfIdPrefixDelimiter cfg
     pxl = getTcfIdPrefixLength cfg
 {-# INLINE readBasePrefixed #-}
+
+-- | Show an integer number in another base as string.
+writeBase :: Int    -- ^ the base
+          -> Int    -- ^ the integer number to show in base
+          -> String -- ^ returned string representation of integer in base
+writeBase base num =
+  N.showIntAtBase base numToLetter num ""
+  where
+    numToLetter n
+      | n < 10 = intToDigit n
+      | otherwise = chr (ord 'a' + n - 10)
+{-# INLINE writeBase #-}
 
 -- * Other
 

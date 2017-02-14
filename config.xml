@@ -52,7 +52,6 @@
     <tcfMetadataNamespace
 	namespace="http://www.dspin.de/data/metadata"/>
     <idBase base="16"/>
-    <idPrefixDelimiter delimiter="_"/>
     <tokenIdPrefix prefix="w"/>
   </tcf>
 </config>

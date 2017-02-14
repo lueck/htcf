@@ -12,6 +12,7 @@ module HTCF.TokenLayer
   , parseToken
   , guessAboutTokenId
   , writeTokenLayer
+  , tokenIdToBase
   ) where
 
 import Text.XML.HXT.Core
@@ -113,22 +114,27 @@ writeTokenLayer :: (ArrowXml a) => [Config] -- ^ the config
                 -> [Token]                  -- ^ the list of tokens
                 -> a XmlTree XmlTree        -- ^ returns an xml arrow
 writeTokenLayer cfg ts =
-  (mkqelem
-   (mkNsName "tokens" ns) -- qname
-   [] -- attribute nodes
-   (map writeToken ts))
+  let base = getTcfIdBase cfg
+      prefix = getTcfTokenIdPrefix cfg
+      ns = getTcfTextCorpusNamespace cfg in
+    (mkqelem
+     (mkNsName "tokens" ns) -- qname
+     [] -- attribute nodes
+     (map (writeToken ns prefix base) ts))
   where
-    ns = getTcfTextCorpusNamespace cfg
-    pfx = getTcfTokenIdPrefix cfg
     maybeAttr n val = maybeToList $ fmap ((sattr n) . show) val
     maybeStrAttr n val = maybeToList $ fmap (sattr n) val
-    writeToken :: (ArrowXml a) => Token -> a XmlTree XmlTree
-    writeToken (Token t idd start end sStart sEnd) =
+    writeToken :: (ArrowXml a) => String -> String -> Int -> Token -> a XmlTree XmlTree
+    writeToken nsuri pfx bs (Token t idd start end sStart sEnd) =
       (mkqelem
-       (mkNsName "token" ns)
-       ((maybeStrAttr "id" (fmap ((pfx++) . show) idd)) ++
+       (mkNsName "token" nsuri)
+       ((maybeStrAttr "id" (tokenIdToBase pfx bs idd)) ++
         (maybeAttr "start" start) ++
         (maybeAttr "end" end) ++
         (maybeAttr "srcStart" sStart) ++
         (maybeAttr "srcEnd" sEnd))
        [(txt t)])
+
+tokenIdToBase :: String -> Int -> Maybe TokenID -> Maybe String
+tokenIdToBase pfx base = fmap ((pfx++) . (writeBase base))
+{-# INLINE tokenIdToBase #-}

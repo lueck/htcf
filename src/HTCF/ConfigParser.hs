@@ -430,7 +430,7 @@ pcTcfMetadataNamespace =
 pcTcfIdBase :: IOSArrow XmlTree Config
 pcTcfIdBase =
   hasName "tcf" >>> getChildren >>>
-  hasName "tcfIdBase" >>>   getAttrValue "base" >>>
+  hasName "idBase" >>>   getAttrValue "base" >>>
   arr (TcfIdBase . fromMaybe defaultTcfIdBase . fmap fst . C.readInt . C.pack) 
 
 pcTcfTokenIdPrefix :: IOSArrow XmlTree Config

@@ -106,26 +106,29 @@ writeTextStructureLayer :: (ArrowXml a) => [Config]   -- ^ the config
                         -> [TextStructure]            -- ^ the list of 'TextSpan'
                         -> a XmlTree XmlTree          -- ^ returns an xml arrow
 writeTextStructureLayer cfg spans =
-  (mkqelem
-   (mkNsName "textstructure" ns)
-   [] -- empty attribute node
-   (map writeTextSpan spans))
-   where
-     ns = getTcfTextCorpusNamespace cfg
-     pfx = getTcfTokenIdPrefix cfg
-     maybeAttr n val = maybeToList $ fmap ((sattr n) . show) val
-     maybeStrAttr n val = maybeToList $ fmap (sattr n) val
-     writeTextSpan :: (ArrowXml a) => TextStructure -> a XmlTree XmlTree
-     writeTextSpan (TextSpan typ uri sTok eTok sText eText sSrc eSrc) =
-       (mkqelem
+  let
+     nsuri = getTcfTextCorpusNamespace cfg
+     prefix = getTcfTokenIdPrefix cfg
+     base = getTcfIdBase cfg
+  in
+    (mkqelem
+     (mkNsName "textstructure" nsuri)
+     [] -- empty attribute node
+     (map (writeTextSpan nsuri prefix base) spans))
+  where
+    maybeAttr n val = maybeToList $ fmap ((sattr n) . show) val
+    maybeStrAttr n val = maybeToList $ fmap (sattr n) val
+    writeTextSpan :: (ArrowXml a) => String -> String -> Int -> TextStructure -> a XmlTree XmlTree
+    writeTextSpan ns pfx bs (TextSpan typ uri sTok eTok sText eText sSrc eSrc) =
+      (mkqelem
         (mkNsName "textspan" ns)
         ((maybeStrAttr "type" typ) ++
          (maybeStrAttr "namespace" uri) ++
-         (maybeStrAttr "start" (fmap ((pfx++) . show) sTok)) ++
-         (maybeStrAttr "end" (fmap ((pfx++) . show) eTok)) ++
+         (maybeStrAttr "start" $ tokenIdToBase pfx bs sTok) ++
+         (maybeStrAttr "end" $ tokenIdToBase pfx bs eTok) ++
          (maybeAttr "textStart" sText) ++
          (maybeAttr "textEnd" eText) ++
          (maybeAttr "srcStart" sSrc) ++
          (maybeAttr "srcEnd" eSrc))
          [] -- no child nodes
-       )
+      )
