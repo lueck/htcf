@@ -38,4 +38,4 @@ lineLenth = do
 runLineOffsetParser :: FilePath -> IO [Int]
 runLineOffsetParser fName = do
   c <- readFile fName
-  return $! either (fail . show) id (parse lineOffsets ("(" ++ fName ++ ")") c)
+  return $ either (fail . show) id (parse lineOffsets ("(" ++ fName ++ ")") c)
