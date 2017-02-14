@@ -49,6 +49,6 @@
     <tcfTextCorpusNamespace
 	namespace="http://www.dspin.de/data/textcorpus"/>
     <idBase base="16"/>
-    <idPrefixDelimiter delimiter="_"/>
+    <tokenIdPrefix prefix="w"/>
   </tcf>
 </config>

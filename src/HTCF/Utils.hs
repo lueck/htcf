@@ -1,7 +1,6 @@
 module HTCF.Utils
   ( readIntMaybe
   , readBase
-  , readBasePrefixed
   , writeBase
   , maybeFun
   , guessBase
@@ -12,12 +11,9 @@ module HTCF.Utils
 import qualified Data.ByteString.Char8 as C
 import qualified Numeric as N
 import Data.Char (ord, digitToInt, isDigit, intToDigit, chr)
-import Data.List
 import Data.Maybe
 import Text.XML.HXT.Core
 import qualified Text.XML.HXT.DOM.XmlNode as XN
-
-import HTCF.ConfigParser
 
 -- * Parse a string representation of a number into an integer.
 
@@ -52,23 +48,6 @@ readBase bs str
       where n = letterToNum d
     num = N.readInt bs isValidDigit letterToNum str
 {-# INLINE readBase #-}
-
--- | Remove the prefix part and then read a string representation a
--- numeric value in another base into a maybe integer value. The base
--- and the method of unprefixing is read from the configuration given
--- as first parameter. Cf. 'TcfIdBase' and 'TcfIdUnprefixMethod'.
-readBasePrefixed :: [Config]    -- ^ the configuration
-                 -> String      -- ^ the string representation
-                 -> Maybe Int   -- ^ Return value
-readBasePrefixed cfg str
-  | method == Delimiter = readBase bs $ drop (fromMaybe 0 $ fmap (+1) $ elemIndex pxd str) str
-  | otherwise = readBase bs $ drop pxl str
-  where
-    method = getTcfIdUnprefixMethod cfg
-    bs = getTcfIdBase cfg
-    pxd = getTcfIdPrefixDelimiter cfg
-    pxl = getTcfIdPrefixLength cfg
-{-# INLINE readBasePrefixed #-}
 
 -- | Show an integer number in another base as string.
 writeBase :: Int    -- ^ the base

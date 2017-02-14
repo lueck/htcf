@@ -4,7 +4,6 @@
 
 module HTCF.ConfigParser
   ( Config (..)
-  , UnprefixMethod (..)
   , runConfigParser
   , getTextRoot
   , getHyphens
@@ -14,12 +13,7 @@ module HTCF.ConfigParser
   , getTcfTextCorpusNamespace
   , getTcfMetadataNamespace
   , getTcfIdBase
-  , setTcfIdBase
   , getTcfTokenIdPrefix
-  , getTcfIdPrefixDelimiter
-  , getTcfIdPrefixLength
-  , setTcfIdPrefixLength
-  , getTcfIdUnprefixMethod
   , getAbbreviations
   , addAbbreviations
   , getMonths
@@ -31,9 +25,6 @@ module HTCF.ConfigParser
   , defaultTcfMetadataNamespace
   , defaultTcfIdBase
   , defaultTcfTokenIdPrefix
-  , defaultTcfIdPrefixDelimiter
-  , defaultTcfIdPrefixLength
-  , defaultTcfIdUnprefixMethod
   , defaultAbbrev1CharToken
   , defaultSingleDigitOrdinal
   , parseConfig
@@ -47,8 +38,6 @@ module HTCF.ConfigParser
   , pcTcfTextCorpusNamespace
   , pcTcfIdBase
   , pcTcfTokenIdPrefix
-  , pcTcfIdPrefixDelimiter
-  , pcTcfIdPrefixLength
   ) where
 
 import Text.XML.HXT.Core
@@ -56,8 +45,6 @@ import qualified Data.ByteString.Char8 as C
 import Data.Maybe
 
 -- * Types
-
-data UnprefixMethod = Delimiter | Length deriving (Show, Eq)
 
 data Config =
   TextRoot QName                        -- ^ qname of parent node for text
@@ -79,15 +66,6 @@ data Config =
                                         -- in a TCF file
   | TcfTokenIdPrefix String             -- ^ The prefix of the token
                                         -- IDs used in a TCF file
-  | TcfIdPrefixDelimiter Char           -- ^ The character that
-                                        -- delimits the prefix from
-                                        -- the number part in a ID
-                                        -- used in a TCF file
-  | TcfIdPrefixLength Int               -- ^ The length of the prefix
-                                        -- in an ID used in a TCF
-                                        -- file.
-  | TcfIdUnprefixMethod UnprefixMethod  -- ^ Howto unprefix an ID used
-                                        -- in a TCF file.
   | Abbreviation String                 -- ^ An abbreviation (string
                                         -- without ending dot)
   | Month String                        -- ^ A month. Months are
@@ -139,20 +117,6 @@ defaultTcfIdBase = 10
 
 defaultTcfTokenIdPrefix :: String
 defaultTcfTokenIdPrefix = "t_"
-
--- | Default value for the delimiter between the prefix part and the
--- numeric part of IDs used in a TCF file: \'_\'.
-defaultTcfIdPrefixDelimiter :: Char
-defaultTcfIdPrefixDelimiter = '_'
-
--- | Default length of the prefix in an ID used in a TCF file: 1.
-defaultTcfIdPrefixLength :: Int
-defaultTcfIdPrefixLength = 2
-
--- | Default method how to strip the prefix in an ID used in a TCF
--- file: 'Length'.
-defaultTcfIdUnprefixMethod :: UnprefixMethod
-defaultTcfIdUnprefixMethod = Length
 
 -- | By default, tokens of the length of 1 character are not treated
 -- as abbrevs.
@@ -235,29 +199,6 @@ getTcfTokenIdPrefix [] = defaultTcfTokenIdPrefix
 getTcfTokenIdPrefix ((TcfTokenIdPrefix p):_) = p
 getTcfTokenIdPrefix (_:xs) = getTcfTokenIdPrefix xs
 
--- | Get the delimiter, that separates the prefix from a numeric part
--- of an ID used in a TCF file. Defaults to
--- 'defaultTcfIdPrefixDelimiter'.
-getTcfIdPrefixDelimiter :: [Config] -> Char
-getTcfIdPrefixDelimiter [] = defaultTcfIdPrefixDelimiter
-getTcfIdPrefixDelimiter ((TcfIdPrefixDelimiter d):_) = d
-getTcfIdPrefixDelimiter (_:xs) = getTcfIdPrefixDelimiter xs
-
--- | Get the length of the prefix preceding the numeric part in an ID
--- used in a TCF file. Defaults to 'defaultTcfPrefixLength'.
-getTcfIdPrefixLength :: [Config] -> Int
-getTcfIdPrefixLength [] = defaultTcfIdPrefixLength
-getTcfIdPrefixLength ((TcfIdPrefixLength l):_) = l
-getTcfIdPrefixLength (_:xs) = getTcfIdPrefixLength xs
-
--- | Get the method howto strip the prefix from an ID used in a TCF
--- file.
-getTcfIdUnprefixMethod :: [Config] -> UnprefixMethod
-getTcfIdUnprefixMethod [] = defaultTcfIdUnprefixMethod
-getTcfIdUnprefixMethod ((TcfIdUnprefixMethod Length):_) = Length
-getTcfIdUnprefixMethod ((TcfIdUnprefixMethod Delimiter):_) = Delimiter
-getTcfIdUnprefixMethod (_:xs) = getTcfIdUnprefixMethod xs
-
 -- | Get the list of abbreviation strings from config.
 getAbbreviations :: [Config] -> [String]
 getAbbreviations [] = []
@@ -291,20 +232,6 @@ singleDigitOrdinalP (_:xs) = singleDigitOrdinalP xs
 
 
 -- * Setters for aspects of the configuration.
-
--- | Set the base of the IDs used in a TCF file.
-setTcfIdBase :: Int       -- ^ the base
-             -> [Config]  -- ^ the existing config
-             -> [Config]  -- ^ the new configuration is returned
-setTcfIdBase bs cfg = (TcfIdBase bs) : cfg
-
--- | Set the length of the prefix preceding the numeric part in an ID
--- used in a Tcf file. This overrides the value parsed from the config
--- file.
-setTcfIdPrefixLength :: Int       -- ^ the length of the ID prefix
-                     -> [Config]  -- ^ the existing configuration
-                     -> [Config]  -- ^ the new configuration is returned
-setTcfIdPrefixLength l cfg = (TcfIdPrefixLength l) : cfg                     
 
 -- | Add a list of strings to the known abbreviations
 -- (cf. 'Abbreviation').
@@ -341,9 +268,7 @@ parseConfig =
   pcTcfTextCorpusNamespace <+>
   pcTcfMetadataNamespace <+>
   pcTcfIdBase <+>
-  pcTcfTokenIdPrefix <+>
-  pcTcfIdPrefixDelimiter <+>
-  pcTcfIdPrefixLength
+  pcTcfTokenIdPrefix
 
 -- | Arrows for parsing special configuration aspects are all prefixed
 -- with pc which stands for parseConfig.
@@ -439,20 +364,7 @@ pcTcfTokenIdPrefix =
   hasName "tokenIdPrefix" >>> getAttrValue "prefix" >>>
   arr (TcfTokenIdPrefix . defaultOnNull defaultTcfTokenIdPrefix)
 
-pcTcfIdPrefixDelimiter :: IOSArrow XmlTree Config
-pcTcfIdPrefixDelimiter =
-  hasName "tcf" >>> getChildren >>>
-  hasName "tcfIdPrefix" >>>
-  getAttrValue "delimiter" >>>
-  arr (TcfIdPrefixDelimiter . head . defaultOnNull (defaultTcfIdPrefixDelimiter:[]))
-
-pcTcfIdPrefixLength :: IOSArrow XmlTree Config
-pcTcfIdPrefixLength =
-  hasName "tcf" >>> getChildren >>>
-  hasName "tcfIdPrefix" >>>
-  getAttrValue "length" >>>
-  arr (TcfIdPrefixLength . fromMaybe defaultTcfIdPrefixLength . fmap fst . C.readInt . C.pack)
-
+-- | Helper function
 defaultOnNull :: [a] -> [a] -> [a]
 defaultOnNull deflt [] = deflt
 defaultOnNull _ (x:xs) = x:xs

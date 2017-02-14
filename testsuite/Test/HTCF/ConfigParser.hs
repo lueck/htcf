@@ -61,26 +61,14 @@ test_getTcfTextCorpusNamespace = do
 test_getTcfIdBase = do
   results <- runConfigParser configFile
   assertEqual
-    10
+    16
     (getTcfIdBase results)
 
-test_getTcfIdPrefixDelimiter = do
+test_getTcfTokenIdPrefix = do
   results <- runConfigParser configFile
   assertEqual
-    '_'
-    (getTcfIdPrefixDelimiter results)
-
-test_getTcfIdPrefixLength = do
-  results <- runConfigParser configFile
-  assertEqual
-    2
-    (getTcfIdPrefixLength results)
-
-test_getTcfIdUnprefixMethod = do
-  results <- runConfigParser configFile
-  assertEqual
-    Length
-    (getTcfIdUnprefixMethod results)
+    "w"
+    (getTcfTokenIdPrefix results)
 
 test_getAbbrev1CharToken = do
   results <- runConfigParser configFile
@@ -95,10 +83,3 @@ test_getMonths = do
 
 
 -- * Tests for setters:
-
-test_setTcfIdPrefixLength = do
-  let config = setTcfIdPrefixLength 10 []
-
-  assertEqual
-    10
-    (getTcfIdPrefixLength config)
