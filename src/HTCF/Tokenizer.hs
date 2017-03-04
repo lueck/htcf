@@ -19,18 +19,30 @@ import HTCF.TcfParserTypeDefs
 import HTCF.ConfigParser
 
 isNumDay :: String -> Bool
-isNumDay (d:'.':[]) = isDigit d
-isNumDay ('0':d:'.':[]) = isDigit d
-isNumDay ('1':d:'.':[]) = isDigit d
-isNumDay ('2':d:'.':[]) = isDigit d
-isNumDay ('3':d:'.':[]) = d == '0' || d == '1'
-isNumDay _ = False
+isNumDay [] = False
+isNumDay day
+  | last day == '.' = isDay (init day)
+  | otherwise = False
+  where
+    isDay (d:[]) = isDigit d
+    isDay ('0':d:[]) = isDigit d
+    isDay ('1':d:[]) = isDigit d
+    isDay ('2':d:[]) = isDigit d
+    isDay ('3':d:[]) = d == '0' || d == '1'
+    isDay _ = False
+{-# INLINE isNumDay #-}
 
 isNumMonth :: String -> Bool
-isNumMonth (d:'.':[]) = isDigit d
-isNumMonth ('0':d:'.':[]) = isDigit d
-isNumMonth ('1':d:'.':[]) = d == '0' || d == '1' || d == '2'
-isNumMonth _ = False
+isNumMonth [] = False
+isNumMonth month
+  | last month == '.' = isMonth (init month)
+  | otherwise = False
+  where
+    isMonth (d:[]) = isDigit d
+    isMonth ('0':d:[]) = isDigit d
+    isMonth ('1':d:[]) = d == '0' || d == '1' || d == '2'
+    isMonth _ = False
+{-# INLINE isNumMonth #-}
 
 -- | Returns true, if the test string is a real subsequence of an
 -- abbreviation string, i.e. it is shorter than the matching
@@ -61,6 +73,7 @@ nthWordStart spacesP n s = spacesPlusLetters + (nthWordStart spacesP (n-1) $ dro
     spaces = length $ takeWhile spacesP s
     letters = length $ takeWhile (not . spacesP) $ drop spaces s
     spacesPlusLetters = spaces+letters
+{-# INLINE nthWordStart #-}
 
 -- | @tokenize@ is the tokenizer function. It takes a configuration
 -- (cf. 'Config') as first parameter and a list of 'TcfElement's as
@@ -83,8 +96,8 @@ tokenize cfg tcf = tokenize' 1 tcf
       | c `elem` nonBreakingChars = False -- non-breaking characters from config
       | otherwise = isSpace c || isPunctuation c -- spaces and punctuation do
     hasBreak :: String -> Bool
-    -- FIXME: 'any' from Data.List may be faster.
-    hasBreak s = isJust $ find isBreak s
+    --hasBreak = isJust . find isBreak
+    hasBreak = any isBreak
 
     isAbbrev :: String -> Bool
     -- the abbreviations from the config have not dot.
@@ -124,7 +137,8 @@ tokenize cfg tcf = tokenize' 1 tcf
       (TcfText
        (drop n txt)
        (shiftTextPosition tOffset n)
-       (drop n xOffset))
+       (drop n xOffset))  
+    {-# INLINE mkText #-}
 
     mvTextLeft :: TcfElement   -- the old first (left) text
                -> TcfElement   -- the old second (right) text
@@ -140,6 +154,7 @@ tokenize cfg tcf = tokenize' 1 tcf
          (drop i t2)
          (shiftTextPosition tO2 i)
          (drop i xO2))]
+    {-# INLINE mvTextLeft #-}
                
     -- tokenize' does all the work.
     tokenize' :: Int -- ^ token id (number)
@@ -155,7 +170,7 @@ tokenize cfg tcf = tokenize' 1 tcf
     tokenize' i (x:x2:(TcfStructure _ _ _ _ _):xs) = tokenize' i (x:x2:xs)
     tokenize' i (x:x2:x3:(TcfStructure _ _ _ _ _):xs) = tokenize' i (x:x2:x3:xs)
     
-    -- Continueing Token: A continuing token spans more than one
+    -- Continuing Token: A continuing token spans more than one
     -- TcfText without break.
     
     -- Case 1: Second text is yust 1 char, like in "Hall" "o".
@@ -265,42 +280,42 @@ tokenize cfg tcf = tokenize' 1 tcf
       = (mkToken (t:".") i x 0)
         : (tokenize' (i+1) ((mkText x 2) : xs))
       -- abbrev: next word lower case
-      | length wds >= 2 && (last $ head wds) == '.' && (isLower $ head $ wds !! 1)
-      = (mkToken (head wds) i x 0)
+      | wdsLen >= 2 && (last fstWd) == '.' && (isLower $ head sndWd)
+      = (mkToken fstWd i x 0)
         : (tokenize' (i+1) ((mkText x fstWdLen) : xs))
       -- Date (i): day. month. year[. -> sentence boundary]. We
       -- generate 3 Tokens to get the sentence boundary right, which
       -- is left for the next call of tokenize'. FIXME: this is german
       -- date format.
-      | length wds >= 3 &&
-          (isNumDay $ head wds) &&       -- numeric day
-          ((isNumMonth $ wds !! 1) ||    -- numeric month
-           (isLitMonthAbbrev $ wds !! 1)) &&   -- literal month
-          (all isDigit $ take thrdWdLen' $ wds !! 2)   -- numeric year
-      = (mkToken (head wds) i x 0)
-        : (mkToken (wds !! 1) (i+1) x sndWdStart)
-        : (mkToken (take thrdWdLen' (wds !! 2)) (i+2) x thrdWdStart)
+      | wdsLen >= 3 &&
+          (isNumDay fstWd) &&             -- numeric day
+          ((isNumMonth sndWd) ||          -- numeric month
+           (isLitMonthAbbrev sndWd)) &&   -- or literal month
+          (all isDigit $ take thrdWdLen' thrdWd)   -- numeric year
+      = (mkToken fstWd i x 0)
+        : (mkToken sndWd (i+1) x sndWdStart)
+        : (mkToken (take thrdWdLen' thrdWd) (i+2) x thrdWdStart)
         : (tokenize' (i+3) ((mkText x (thrdWdStart+thrdWdLen')) : xs))
       -- Date (ii): day. month. We generate 2 tokens. FIXME: german date format.
-      | length wds >= 2 &&
-          (isNumDay $ head wds) &&      -- numeric day
-          ((isNumMonth $ wds !! 1) ||   -- numeric month
-           (isLitMonthAbbrev $ wds !! 1))     -- literal month
-      = (mkToken (head wds) i x 0)
-        : (mkToken (wds !! 1) (i+1) x sndWdStart)
+      | wdsLen >= 2 &&
+          (isNumDay fstWd) &&            -- numeric day
+          ((isNumMonth sndWd) ||         -- numeric month
+           (isLitMonthAbbrev sndWd))     -- literal month
+      = (mkToken fstWd i x 0)
+        : (mkToken sndWd (i+1) x sndWdStart)
         : (tokenize' (i+2) ((mkText x (sndWdStart+sndWdLen)) : xs))
       -- Date (iii): day. literal month not abbreviated. We generate 2
       -- tokens. FIXME: german date format.
-      | length wds >= 2 &&
-          (isNumDay $ head wds) &&      -- numeric day
-          ((take sndWdLen' $ wds !! 1) `elem` months)     -- literal month
-      = (mkToken (head wds) i x 0)
-        : (mkToken (take sndWdLen' (wds !! 1)) (i+1) x sndWdStart)
+      | wdsLen >= 2 &&
+          (isNumDay fstWd) &&      -- numeric day
+          ((take sndWdLen' sndWd) `elem` months)     -- literal month
+      = (mkToken fstWd i x 0)
+        : (mkToken (take sndWdLen' sndWd) (i+1) x sndWdStart)
         : (tokenize' (i+2) ((mkText x (sndWdStart+sndWdLen')) : xs))
       -- Date (iv): literal month abbreviated, without day. We
       -- generate 1 Token.
-      | isLitMonthAbbrev $ head wds
-      = (mkToken (head wds) i x 0)
+      | isLitMonthAbbrev fstWd
+      = (mkToken fstWd i x 0)
         : (tokenize' (i+1) ((mkText x fstWdLen) : xs))
 
       -- [0-9]\.: one digit followed by dot
@@ -309,8 +324,8 @@ tokenize cfg tcf = tokenize' 1 tcf
         : (tokenize' (i+1) ((mkText x 2) : xs))
 
       -- Abbreviation from config
-      | isAbbrev $ head wds
-      = (mkToken (head wds) i x 0)
+      | isAbbrev fstWd
+      = (mkToken fstWd i x 0)
         : (tokenize' (i+1) ((mkText x fstWdLen) : xs))
 
       -- Punctuation token
@@ -326,9 +341,13 @@ tokenize cfg tcf = tokenize' 1 tcf
         spaces = length $ takeWhile isSpace tx
         letters = length $ takeWhile (not . isBreak) tx
         wds = words tx -- list of words, but punctuation is constituent of word
-        fstWdLen = length $ head wds
-        sndWdLen = length (wds !! 1)
-        sndWdLen' = length $ takeWhile (not . isBreak) (wds !! 1) -- no dot
-        thrdWdLen' = length $ takeWhile (not . isBreak) (wds !! 2) -- no dot
+        wdsLen = length wds -- count of words
+        fstWd = head wds -- first of the words
+        fstWdLen = length fstWd -- length of first word
+        sndWd = wds !! 1 -- second of the words
+        sndWdLen = length sndWd
+        sndWdLen' = length $ takeWhile (not . isBreak) sndWd -- no dot
+        thrdWd = wds !! 2
+        thrdWdLen' = length $ takeWhile (not . isBreak) thrdWd -- no dot
         sndWdStart = nthWordStart isBreak 1 tx
         thrdWdStart = nthWordStart isBreak 2 tx
