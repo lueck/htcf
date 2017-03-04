@@ -39,12 +39,16 @@ isRealAbbrev :: [String] -> String -> Bool
 isRealAbbrev [] _ = False
 isRealAbbrev _ [] = False
 isRealAbbrev abbrs str
-  | (last str == '.') && (not $ null abbr) = length str <= (length $ head abbr)
+  | (last str == '.') && (str /= ".") = substringP abbrs strWithoutDot
   | otherwise = False
   where
     strWithoutDot = init str
-    abbr = filter (isSubsequenceOf strWithoutDot) abbrs
-
+    lengthS = length strWithoutDot
+    substringP :: [String] -> String -> Bool
+    substringP [] _ = False
+    substringP (a:as) s
+      | (s `isPrefixOf` a) && (lengthS < length a) = True
+      | otherwise = substringP as s
 
 dropNWords :: (Char -> Bool) -> Int -> String -> String
 dropNWords _ 0 s = s
