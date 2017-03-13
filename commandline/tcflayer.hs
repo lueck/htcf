@@ -74,10 +74,10 @@ run (Convert configFile readLayer outputMethod inFile) = do
             Just TextLayer -> layers^._1.to (getTextText . head)
             otherwise -> layers^._2.to show
   case outputMethod of
-    Just Csv -> B.putStrLn csv
+    Just Csv -> B.putStr csv -- no new line at the end
     Just Json -> B.putStrLn json
     Just Raw -> putStrLn raw
-    otherwise -> B.putStrLn csv
+    otherwise -> B.putStr csv
   {- -- This would be shorter but results in a compile error
   let
     method = case outputMethod of
