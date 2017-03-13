@@ -43,6 +43,7 @@ library
                    , parsec >= 3.1.11
                    , cassava
                    , aeson
+                   , directory
   hs-source-dirs:    src
   default-language:  Haskell2010
 
@@ -55,6 +56,7 @@ Executable xml2tcf
                    , parsec >= 3.1.11
                    , cassava
                    , aeson
+                   , directory
   build-depends:     htcf
                    , optparse-applicative >= 0.12.1.0
   hs-source-dirs:    commandline
@@ -69,6 +71,7 @@ Executable tcflayer
                    , parsec >= 3.1.11
                    , cassava
                    , aeson
+                   , directory
   build-depends:     htcf
                    , optparse-applicative >= 0.12.1.0
                    , lens
@@ -107,6 +110,7 @@ Test-Suite test-main
                    , parsec >= 3.1.11
                    , cassava
                    , aeson
+                   , directory
   build-depends:     HTF >=0.10.1
                    , QuickCheck
                    , bytestring

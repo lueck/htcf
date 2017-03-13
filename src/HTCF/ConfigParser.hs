@@ -43,6 +43,9 @@ module HTCF.ConfigParser
 import Text.XML.HXT.Core
 import qualified Data.ByteString.Char8 as C
 import Data.Maybe
+import System.IO
+import System.Directory
+import System.Environment
 
 -- * Types
 
@@ -246,11 +249,17 @@ addAbbreviations abbrevs cfg = cfg ++ (map (Abbreviation) abbrevs)
 -- | Returns the config defined in a XML config file.
 runConfigParser :: FilePath -> IO [Config]
 runConfigParser fname = do
-  results <- runX (readDocument [withValidate no] fname >>>
-                   propagateNamespaces //>
-                   hasName "config" >>>
-                   multi parseConfig)
-  return results
+  exists <- doesFileExist fname
+  progName <- getProgName
+  if exists then
+    do { results <- runX (readDocument [withValidate no] fname >>>
+                          propagateNamespaces //>
+                          hasName "config" >>>
+                          multi parseConfig)
+       ; return results}
+    else
+    do { hPutStrLn stderr (progName ++ ": No config file found. Using empty config")
+       ; return [] }
 
 -- | An arrow for parsing the config file. Cf. implementation of
 -- 'runConfigParser' for usage.
