@@ -61,8 +61,8 @@ Executable xml2tcf
   default-language:  Haskell2010
 
 
-Executable readtcf
-  main-is:           readtcf.hs
+Executable tcflayer
+  main-is:           tcflayer.hs
   build-depends:     base >=4.9 && <4.10
                    , containers >= 0.5.7.1
                    , hxt
@@ -80,6 +80,27 @@ Executable readtcf
 Test-Suite test-main
   type:              exitcode-stdio-1.0
   main-is:           TestMain.hs
+  other-modules:     HTCF.ArrowXml
+                   , HTCF.ConfigParser
+                   , HTCF.TcfParser
+                   , HTCF.TcfParserTypeDefs
+                   , HTCF.Position
+                   , HTCF.TextLayer
+                   , HTCF.TokenLayer
+                   , HTCF.Tokenizer
+                   , HTCF.StructureLayer
+                   , HTCF.Utils
+                   , HTCF.ReadTcf
+                   , HTCF.WriteTcf
+                   , HTCF.PosParser.XmlParsec
+                   , HTCF.PosParser.ParserInterface
+                   , HTCF.PosParser.ProcessDocument
+                   , HTCF.PosParser.ReadDocument
+                   , HTCF.LineOffsets
+                   , Test.HTCF.ArrowXml
+                   , Test.HTCF.ConfigParser
+                   , Test.HTCF.TcfParser
+                   , Test.HTCF.Tokenizer
   build-depends:     base >=4.9 && <4.10
                    , containers >= 0.5.7.1
                    , hxt
