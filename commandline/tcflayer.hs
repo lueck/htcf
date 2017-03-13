@@ -78,7 +78,6 @@ run (Convert configFile readLayer outputMethod inFile) = do
     Just Json -> B.putStrLn json
     Just Raw -> putStrLn raw
     otherwise -> B.putStrLn csv
-  print layers
   {- -- This would be shorter but results in a compile error
   let
     method = case outputMethod of
