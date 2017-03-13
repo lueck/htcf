@@ -4,9 +4,11 @@ module HTCF.ArrowXml
   , stripName
   , stripNames
   , stripQNames
+  , getAttrCaseValue
   ) where
 
 import Text.XML.HXT.Core
+import Data.Char
 
 nameIn :: (ArrowXml a) => [String] -> a XmlTree XmlTree
 nameIn names = (getName >>> isA (flip elem names)) `guards` this
@@ -30,6 +32,18 @@ stripNames names = processTopDown $ neg $ (nameIn names) `guards` this
 
 stripQNames :: (ArrowXml a) => [QName] -> a XmlTree XmlTree
 stripQNames qNames = processTopDown $ neg $ (qNameIn qNames) `guards` this
+
+-- | Select the value of an attribute of an element node. The
+-- attribute name is matched case insensitive. This always succeeds
+-- with an empty string as default value.
+getAttrCaseValue :: (ArrowXml a) => String -> a XmlTree String
+getAttrCaseValue n =
+  xshow (getAttrl >>>
+         hasNameWith ((==n') . upper . localPart) >>>
+         getChildren)
+  where
+    n' = upper n
+    upper = map toUpper
 
 play :: String -> IO ()
 play fname = do
