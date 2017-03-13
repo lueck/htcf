@@ -41,6 +41,8 @@ library
                    , containers >= 0.5.7.1
                    , hxt
                    , parsec >= 3.1.11
+                   , cassava
+                   , aeson
   hs-source-dirs:    src
   default-language:  Haskell2010
 
@@ -51,6 +53,8 @@ Executable xml2tcf
                    , containers >= 0.5.7.1
                    , hxt
                    , parsec >= 3.1.11
+                   , cassava
+                   , aeson
   build-depends:     htcf
                    , optparse-applicative >= 0.12.1.0
   hs-source-dirs:    commandline
@@ -63,8 +67,12 @@ Executable readtcf
                    , containers >= 0.5.7.1
                    , hxt
                    , parsec >= 3.1.11
+                   , cassava
+                   , aeson
   build-depends:     htcf
                    , optparse-applicative >= 0.12.1.0
+                   , lens
+                   , bytestring
   hs-source-dirs:    commandline
   default-language:  Haskell2010
 
@@ -76,6 +84,8 @@ Test-Suite test-main
                    , containers >= 0.5.7.1
                    , hxt
                    , parsec >= 3.1.11
+                   , cassava
+                   , aeson
   build-depends:     HTF >=0.10.1
                    , QuickCheck
                    , bytestring

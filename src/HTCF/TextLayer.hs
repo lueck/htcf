@@ -1,11 +1,15 @@
-{-# LANGUAGE DisambiguateRecordFields #-}
+{-# LANGUAGE DisambiguateRecordFields, DeriveGeneric #-}
 module HTCF.TextLayer
   ( Text (..)
   , parseTextLayer
   , writeTextLayer
+  , getTextText
   ) where
 
 import Text.XML.HXT.Core
+import GHC.Generics
+import qualified Data.Csv as Csv
+import qualified Data.Aeson as A
 
 import HTCF.ConfigParser
 
@@ -15,7 +19,17 @@ import HTCF.ConfigParser
 
 -- | Represents the text layer the text.
 data Text = Text String
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic)
+
+-- | 'Text' is ready to be exported to CSV.
+instance Csv.ToRecord Text
+
+-- | 'Text' is read to be exported to JSON.
+instance A.ToJSON Text
+
+-- | Get the text of 'Text'.
+getTextText :: Text -> String
+getTextText (Text s) = s
 
 -- * Arrows for reading the tcf text layer. 
 

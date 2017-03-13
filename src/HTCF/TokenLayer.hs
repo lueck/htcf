@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DisambiguateRecordFields #-}
 module HTCF.TokenLayer
   ( Token (..)
@@ -17,10 +18,14 @@ module HTCF.TokenLayer
 
 import Text.XML.HXT.Core
 import Data.Maybe
+import GHC.Generics
+import qualified Data.Csv as Csv
+import qualified Data.Aeson as A
 
 import HTCF.ConfigParser
 import HTCF.Position
 import HTCF.Utils
+import HTCF.ArrowXml
 
 -- | This modules defines types and functions for the reading and
 -- writing the token layer.
@@ -49,7 +54,13 @@ data Token = Token
   , srcEnd :: Maybe XmlPosition       -- ^ end character offset
                                       -- position in relation to XML
                                       -- source file
-    } deriving (Show, Eq)
+    } deriving (Show, Eq, Generic)
+
+-- | 'Token' is ready to be exported to CSV.
+instance Csv.ToRecord Token
+
+-- | 'Token' is read to be exported to JSON.
+instance A.ToJSON Token
 
 -- * Getters for the fields of the 'Token' record.
 
@@ -84,11 +95,11 @@ parseToken :: (ArrowXml a) => [Config] -> Int -> Int -> a XmlTree Token
 parseToken cfg pfxLen base =
   hasQName (mkNsName "token" $ getTcfTextCorpusNamespace cfg) >>>
   (getChildren >>> getText) &&&
-  getAttrValue "ID" &&&
-  getAttrValue "start" &&&
-  getAttrValue "end" &&&
-  getAttrValue "srcStart" &&&
-  getAttrValue "srcEnd" >>>
+  getAttrCaseValue "ID" &&&
+  getAttrCaseValue "start" &&&
+  getAttrCaseValue "end" &&&
+  getAttrCaseValue "srcStart" &&&
+  getAttrCaseValue "srcEnd" >>>
   arr (\(t, (idd, (s, (e, (sS, sE))))) ->
          (Token
            t
@@ -103,7 +114,7 @@ guessAboutTokenId :: [Config] -> XmlTrees -> IO (Int, Int)
 guessAboutTokenId cfg tree = do
   ids <- runX (constL tree //>
                multi (isElem >>> hasQName (mkNsName "token" $ getTcfTextCorpusNamespace cfg) >>>
-               getAttrValue "ID"))
+               getAttrCaseValue "ID"))
   let pfxLen = length $ commonPrefix $ take 32 $ filter (/= "") ids
   return (pfxLen, (guessBase $ map (drop pfxLen) ids))
 
