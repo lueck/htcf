@@ -19,6 +19,7 @@ import HTCF.StructureLayer
 import HTCF.ArrowXml
 import HTCF.WriteTcf
 import HTCF.LineOffsets
+import HTCF.Abbrev
 
 import qualified HTCF.PosParser.ReadDocument as RD (readDocument)
 
@@ -54,7 +55,7 @@ convert_ = Convert
 run :: Convert -> IO ()
 run (Convert configFile abbrevFile outputStructure outFile fName) = do
   config <- runConfigParser $ fromMaybe "config.xml" configFile
-  abbrevs <- readFile $ fromMaybe "abbrevs.txt" abbrevFile
+  abbrevs <- runAbbrevParser $ fromMaybe "abbrevs.txt" abbrevFile
   lineOffsets <- runLineOffsetParser fName
   parsed <- runXIOState (initialState lineOffsets)
             (RD.readDocument [ withValidate no
@@ -68,7 +69,7 @@ run (Convert configFile abbrevFile outputStructure outFile fName) = do
             )
   let
     parsedOffsets = propagateOffsets parsed
-    tokens = tokenize (addAbbreviations (lines abbrevs) config) parsedOffsets
+    tokens = tokenize (addAbbreviations abbrevs config) parsedOffsets
     textLayer = writeTextLayer config $
                 concatMap getTcfText parsed
     tokenLayer = writeTokenLayer config tokens
