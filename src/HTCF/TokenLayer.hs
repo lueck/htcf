@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DisambiguateRecordFields #-}
 module HTCF.TokenLayer
@@ -19,6 +21,7 @@ module HTCF.TokenLayer
 import Text.XML.HXT.Core
 import Data.Maybe
 import GHC.Generics
+import qualified Data.ByteString as B
 import qualified Data.Csv as Csv
 import qualified Data.Aeson as A
 
@@ -26,6 +29,7 @@ import HTCF.ConfigParser
 import HTCF.Position
 import HTCF.Utils
 import HTCF.ArrowXml
+import HTCF.Range
 
 -- | This modules defines types and functions for the reading and
 -- writing the token layer.
@@ -56,11 +60,33 @@ data Token = Token
                                       -- source file
     } deriving (Show, Eq, Generic)
 
--- | 'Token' is ready to be exported to CSV.
-instance Csv.ToRecord Token
+-- * Exporting
 
 -- | 'Token' is read to be exported to JSON.
 instance A.ToJSON Token
+
+-- | 'Token' is ready to be exported to CSV.
+instance Csv.ToRecord Token
+
+-- | 'Token' is ready to be exported to CSV with text and source
+-- offsets implemented as PostgreSQL's range type.
+instance Csv.ToRecord (PostgresRange Token) where
+  toRecord (PostgresRange (Token token tokenId start end srcStart srcEnd))
+    = Csv.record [ Csv.toField token
+                 , toField' B.empty tokenId
+                 -- FIXME: This causes double quotes around a
+                 -- range. Does this matter?
+                 , (B.concat [ "'[", (toField' "NULL" start), ","
+                             , (toField' "NULL" end), "]'"])
+                 , (B.concat [ "'[", (toField' "NULL" srcStart), ","
+                             , (toField' "NULL" srcEnd), "]'"])
+                 ]
+
+toField' :: (Csv.ToField a) => B.ByteString -- ^ Default value
+         -> Maybe a -- ^ the maybe field, 
+         -> Csv.Field
+toField' deflt f = maybe deflt Csv.toField f 
+   
 
 -- * Getters for the fields of the 'Token' record.
 

@@ -18,6 +18,7 @@ import HTCF.ConfigParser
 import HTCF.TcfParser
 import HTCF.TcfParserTypeDefs
 import HTCF.Tokenizer
+import HTCF.Range
 
 data Convert =
   Convert { configFile :: Maybe String
@@ -26,7 +27,7 @@ data Convert =
           , inFile :: String
           }
 
-data OutputMethod = Csv | Json | Raw
+data OutputMethod = Csv | CsvPgRange | Json | Raw
 
 data ReadLayer = TextLayer | TokenLayer
 
@@ -47,6 +48,11 @@ convert_ = Convert
                              <> long "csv"
                              <> help "Output as comma separated values (CSV). This is the default output format."))
                 <|>
+                (flag' CsvPgRange (short 'p'
+                                   <> long "csv-pg-range"
+                                   <> help "Output as comma separated values (CSV), but format text offsets and source offsets as PostgreSQL's range type, i.e. \"...,'[textStart,textEnd]','[sourceStart,sourceEnd]',...\"."))
+
+                <|>
                 (flag' Json (short 'j'
                               <> long "json"
                               <> help "Output as JavaScript Object Notation (JSON)."))
@@ -65,6 +71,10 @@ run (Convert configFile readLayer outputMethod inFile) = do
             Just TokenLayer -> layers^._2.to C.encode
             Just TextLayer -> layers^._1.to C.encode
             otherwise -> layers^._2.to C.encode
+    csvPgRange = case readLayer of
+                   Just TokenLayer -> layers^._2.to (C.encode . (map PostgresRange))
+                   Just TextLayer -> layers^._1.to C.encode
+                   otherwise -> layers^._2.to (C.encode . (map PostgresRange))
     json = case readLayer of
              Just TokenLayer -> layers^._2.to J.encode
              Just TextLayer -> layers^._1.to J.encode
@@ -75,6 +85,7 @@ run (Convert configFile readLayer outputMethod inFile) = do
             otherwise -> layers^._2.to show
   case outputMethod of
     Just Csv -> B.putStr csv -- no new line at the end
+    Just CsvPgRange -> B.putStr csvPgRange
     Just Json -> B.putStrLn json
     Just Raw -> putStrLn raw
     otherwise -> B.putStr csv
