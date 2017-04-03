@@ -69,17 +69,15 @@ instance A.ToJSON Token
 instance Csv.ToRecord Token
 
 -- | 'Token' is ready to be exported to CSV with text and source
--- offsets implemented as PostgreSQL's range type.
+-- offsets formatted as PostgreSQL's range type.
 instance Csv.ToRecord (PostgresRange Token) where
   toRecord (PostgresRange (Token token tokenId start end srcStart srcEnd))
     = Csv.record [ Csv.toField token
                  , toField' B.empty tokenId
-                 -- FIXME: This causes double quotes around a
-                 -- range. Does this matter?
-                 , (B.concat [ "'[", (toField' "NULL" start), ","
-                             , (toField' "NULL" end), "]'"])
-                 , (B.concat [ "'[", (toField' "NULL" srcStart), ","
-                             , (toField' "NULL" srcEnd), "]'"])
+                 , (B.concat [ "[", (toField' "NULL" start), ","
+                             , (toField' "NULL" end), "]"])
+                 , (B.concat [ "[", (toField' "NULL" srcStart), ","
+                             , (toField' "NULL" srcEnd), "]"])
                  ]
 
 toField' :: (Csv.ToField a) => B.ByteString -- ^ Default value
