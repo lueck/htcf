@@ -53,7 +53,7 @@ convert_ = Convert
                 <|>
                 (flag' CsvPgRange (short 'p'
                                    <> long "csv-pg-range"
-                                   <> help "Output as comma separated values (CSV), but format text offsets and source offsets as PostgreSQL's range type, i.e. \"...|[textStart,textEnd]|[sourceStart,sourceEnd]|...\". Since the range contains a comma, the CSV delimiter needs to be set to some other character."))
+                                   <> help "Output as comma separated values (CSV), but format text offsets and source offsets as PostgreSQL's range type, i.e. '...,\"[textStart,textEnd]\",\"[sourceStart,sourceEnd]\",...'. Since the range contains a comma, it is quoted, if the CSV delimiter is set to comma (default)."))
 
                 <|>
                 (flag' Json (short 'j'
