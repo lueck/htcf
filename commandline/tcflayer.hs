@@ -4,6 +4,7 @@ import Options.Applicative
 import Data.Monoid ((<>))
 import Text.XML.HXT.Core
 import Data.Maybe
+import Data.Char
 import Control.Lens hiding (argument)
 import qualified Data.Csv as C
 import qualified Data.ByteString.Lazy.Char8 as B
@@ -21,9 +22,10 @@ import HTCF.Tokenizer
 import HTCF.Range
 
 data Convert =
-  Convert { configFile :: Maybe String
+  Convert { configFile :: String
           , readLayer :: Maybe ReadLayer
           , outputMethod :: Maybe OutputMethod
+          , csvDelimiter :: String
           , inFile :: String
           }
 
@@ -33,10 +35,11 @@ data ReadLayer = TextLayer | TokenLayer
 
 convert_ :: Parser Convert
 convert_ = Convert
-  <$> optional (strOption (short 'c'
-                            <> long "config"
-                            <> help "Specify a config file."
-                            <> metavar "CONFIGFILE" ))
+  <$> strOption (short 'c'
+                  <> long "config"
+                  <> help "Specify a config file. Defaults to config.xml in the current directory."
+                  <> value "config.xml"
+                  <> metavar "CONFIGFILE")
   <*> optional ((flag' TextLayer (short 'x'
                                    <> long "text"
                                    <> help "Get the text layer."))
@@ -50,7 +53,7 @@ convert_ = Convert
                 <|>
                 (flag' CsvPgRange (short 'p'
                                    <> long "csv-pg-range"
-                                   <> help "Output as comma separated values (CSV), but format text offsets and source offsets as PostgreSQL's range type, i.e. \"...,'[textStart,textEnd]','[sourceStart,sourceEnd]',...\"."))
+                                   <> help "Output as comma separated values (CSV), but format text offsets and source offsets as PostgreSQL's range type, i.e. \"...|[textStart,textEnd]|[sourceStart,sourceEnd]|...\". Since the range contains a comma, the CSV delimiter needs to be set to some other character."))
 
                 <|>
                 (flag' Json (short 'j'
@@ -60,21 +63,28 @@ convert_ = Convert
                 (flag' Raw (short 'r'
                              <> long "raw"
                              <> help "Output in raw haskell format. Choose this format to get the text layer as string.")))
+  <*> strOption (long "csv-delimiter"
+                  <> help "Delimiter for CSV output. Defaults to ',' (comma)."
+                  <> value ","
+                  <> metavar "CHAR")
   <*> argument str (metavar "INFILE")
 
 run :: Convert -> IO ()
-run (Convert configFile readLayer outputMethod inFile) = do
-  config <- runConfigParser $ fromMaybe "config.xml" configFile
+run (Convert configFile readLayer outputMethod csvDel inFile) = do
+  config <- runConfigParser configFile
   layers <- runTcfReader config inFile
   let
+    csvOpts = C.defaultEncodeOptions {
+      C.encDelimiter = fromIntegral $ ord $ head csvDel
+      }
     csv = case readLayer of
-            Just TokenLayer -> layers^._2.to C.encode
-            Just TextLayer -> layers^._1.to C.encode
-            otherwise -> layers^._2.to C.encode
+            Just TokenLayer -> layers^._2.to (C.encodeWith csvOpts)
+            Just TextLayer -> layers^._1.to (C.encodeWith csvOpts)
+            otherwise -> layers^._2.to (C.encodeWith csvOpts)
     csvPgRange = case readLayer of
-                   Just TokenLayer -> layers^._2.to (C.encode . (map PostgresRange))
-                   Just TextLayer -> layers^._1.to C.encode
-                   otherwise -> layers^._2.to (C.encode . (map PostgresRange))
+                   Just TokenLayer -> layers^._2.to ((C.encodeWith csvOpts) . (map PostgresRange))
+                   Just TextLayer -> layers^._1.to (C.encodeWith csvOpts)
+                   otherwise -> layers^._2.to ((C.encodeWith csvOpts) . (map PostgresRange))
     json = case readLayer of
              Just TokenLayer -> layers^._2.to J.encode
              Just TextLayer -> layers^._1.to J.encode
@@ -92,9 +102,9 @@ run (Convert configFile readLayer outputMethod inFile) = do
   {- -- This would be shorter but results in a compile error
   let
     method = case outputMethod of
-               Just Csv -> B.putStrLn . C.encode
+               Just Csv -> B.putStrLn . (C.encodeWith csvOpts)
                Just Json -> B.putStrLn . J.encode
-               otherwise -> B.putStrLn . C.encode
+               otherwise -> B.putStrLn . (C.encodeWith csvOpts)
   case readLayer of
     Just TokenLayer -> layers ^._2.to method
     Just TextLayer -> layers ^._1.to method
