@@ -22,9 +22,13 @@ interrelate the TCF data to semantic annotations that were made to the
 input file (manually) in a standoff manner.
 
 `htcf` also provides a taxi for setting TCF data over to JSON, SQL or
-raw haskell data: the `tcflayer` commandline program. It lets you
-specify the output format and which layer to get out of the file. It
-is useful for preparing bulk inserts into a database.
+raw haskell data: the `tcflayer` and `tcftokens` commandline
+programs. They let you specify the output format and which layer to
+get out of the file. It is useful for preparing bulk inserts into a
+database. While `tcflayer` reads a single layer, `tcftokens` collects
+information about tokens from all layers.
+
+
 
 ## Layers currently supported ##
 
@@ -33,10 +37,13 @@ is useful for preparing bulk inserts into a database.
 |----------------+----------------+-----------------+----------------+-----------------|
 | text           | yes            | yes             | yes            | yes             |
 | tokens         | yes            | yes             | yes            | yes             |
+| sentences      | yes            | yes             |                | yes             |
+| POStags        | yes            | yes             |                | yes             |
+| lemmas         | yes            | yes             |                | yes             |
 | text structure | no             | yes             | yes            | no              |
 </code></pre>
 
-Roadmap: sentence, POStag, Lemma
+Roadmap: Frequencies in the output of `tcftokens`
 
 ## Installation ##
 
