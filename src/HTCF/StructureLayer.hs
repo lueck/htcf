@@ -7,6 +7,7 @@ import Data.Maybe
 import HTCF.ConfigParser
 import HTCF.TokenLayer
 import HTCF.Position
+import HTCF.Utils
 import qualified HTCF.TcfParserTypeDefs as TP
 
 -- FIXME? Reproduce attributes?
@@ -14,8 +15,8 @@ import qualified HTCF.TcfParserTypeDefs as TP
 data TextStructure = TextSpan
   { typE :: Maybe String
   , namespace :: Maybe String
-  , start :: Maybe TokenID
-  , end :: Maybe TokenID
+  , start :: Maybe Int
+  , end :: Maybe Int
   , textStart :: Maybe TextPosition
   , textEnd :: Maybe TextPosition
   , srcStart :: Maybe XmlPosition
@@ -34,7 +35,7 @@ getTextStartPos (TextSpan _ _ _ _ s _ _ _) = s
 getTextEndPos :: TextStructure -> Maybe TextPosition
 getTextEndPos (TextSpan _ _ _ _ _ e _ _) = e
 
-mkTextSpan :: TP.TcfElement -> Maybe TokenID -> Maybe TokenID -> TextStructure
+mkTextSpan :: TP.TcfElement -> Maybe Int -> Maybe Int -> TextStructure
 mkTextSpan el startToken endToken =
   (TextSpan
      (fmap localPart $ TP.getTcfQName el)
@@ -87,7 +88,7 @@ mkTextSpans [] (el:els)
   -- element text.
   = (mkTextSpan el Nothing Nothing) : mkTextSpans [] els
 
-findLastToken :: [Token] -> TextPosition -> Maybe TokenID
+findLastToken :: [Token] -> TextPosition -> Maybe Int
 findLastToken [] _ = Nothing
 findLastToken (t:[]) end
   | end >= fromMaybe 0 tStart && isJust tStart = getTokenID t
@@ -124,8 +125,8 @@ writeTextStructureLayer cfg spans =
         (mkNsName "textspan" ns)
         ((maybeStrAttr "type" typ) ++
          (maybeStrAttr "namespace" uri) ++
-         (maybeStrAttr "start" $ tokenIdToBase pfx bs sTok) ++
-         (maybeStrAttr "end" $ tokenIdToBase pfx bs eTok) ++
+         (maybeStrAttr "start" $ idToBase pfx bs sTok) ++
+         (maybeStrAttr "end" $ idToBase pfx bs eTok) ++
          (maybeAttr "textStart" sText) ++
          (maybeAttr "textEnd" eText) ++
          (maybeAttr "srcStart" sSrc) ++

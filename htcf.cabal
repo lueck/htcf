@@ -25,7 +25,12 @@ library
                    , HTCF.TextLayer
                    , HTCF.TokenLayer
                    , HTCF.Tokenizer
+                   , HTCF.SentenceLayer
+                   , HTCF.POStagLayer
+                   , HTCF.LemmaLayer
                    , HTCF.StructureLayer
+                   , HTCF.TcfLayers
+                   , HTCF.TcfData
                    , HTCF.Utils
                    , HTCF.ReadTcf
                    , HTCF.WriteTcf
@@ -82,6 +87,23 @@ Executable tcflayer
   default-language:  Haskell2010
 
 
+Executable tcftokens
+  main-is:           tcftokens.hs
+  build-depends:     base >=4.9 && <4.10
+                   , containers >= 0.5.7.1
+                   , hxt
+                   , parsec >= 3.1.11
+                   , cassava
+                   , aeson
+                   , directory
+  build-depends:     htcf
+                   , optparse-applicative >= 0.12.1.0
+                   , lens
+                   , bytestring
+  hs-source-dirs:    commandline
+  default-language:  Haskell2010
+
+
 Test-Suite test-main
   type:              exitcode-stdio-1.0
   main-is:           TestMain.hs
@@ -94,6 +116,11 @@ Test-Suite test-main
                    , HTCF.TokenLayer
                    , HTCF.Tokenizer
                    , HTCF.StructureLayer
+                   , HTCF.SentenceLayer
+                   , HTCF.POStagLayer
+                   , HTCF.LemmaLayer
+                   , HTCF.TcfLayers
+                   , HTCF.TcfData
                    , HTCF.Utils
                    , HTCF.ReadTcf
                    , HTCF.WriteTcf

@@ -4,7 +4,6 @@
 {-# LANGUAGE DisambiguateRecordFields #-}
 module HTCF.TokenLayer
   ( Token (..)
-  , TokenID
   , getToken
   , getTokenID
   , getTokenStartTextPos
@@ -15,7 +14,6 @@ module HTCF.TokenLayer
   , parseToken
   , guessAboutTokenId
   , writeTokenLayer
-  , tokenIdToBase
   ) where
 
 import Text.XML.HXT.Core
@@ -31,8 +29,8 @@ import HTCF.Utils
 import HTCF.ArrowXml
 import HTCF.Range
 
--- | This modules defines types and functions for the reading and
--- writing the token layer.
+-- | This modules defines types and functions for reading and writing
+-- the token layer.
 -- Cf. http://weblicht.sfs.uni-tuebingen.de/weblichtwiki/index.php/The_TCF_Format#Tokens
 --
 -- The tokenizer is in Tokenizer.hs.
@@ -40,12 +38,10 @@ import HTCF.Range
 
 -- * Token type defs
 
-type TokenID = Int
-
 -- | Represents a single token
 data Token = Token                      
   { token :: String                   -- ^ the token
-  , tokenId :: Maybe TokenID          -- ^ the token's ID
+  , tokenId :: Maybe Int              -- ^ the token's ID
   , start :: Maybe TextPosition       -- ^ start character offset
                                       -- position in relation to text
                                       -- layer
@@ -58,7 +54,7 @@ data Token = Token
   , srcEnd :: Maybe XmlPosition       -- ^ end character offset
                                       -- position in relation to XML
                                       -- source file
-    } deriving (Show, Eq, Generic)
+  } deriving (Show, Eq, Generic)
 
 -- * Exporting
 
@@ -91,7 +87,7 @@ toField' deflt f = maybe deflt Csv.toField f
 getToken :: Token -> String
 getToken (Token t _ _ _ _ _) = t
 
-getTokenID :: Token -> Maybe TokenID
+getTokenID :: Token -> Maybe Int
 getTokenID (Token _ idd _ _ _ _) = idd
 
 getTokenStartTextPos :: Token -> Maybe TextPosition
@@ -163,13 +159,9 @@ writeTokenLayer cfg ts =
     writeToken nsuri pfx bs (Token t idd start end sStart sEnd) =
       (mkqelem
        (mkNsName "token" nsuri)
-       ((maybeStrAttr "id" (tokenIdToBase pfx bs idd)) ++
+       ((maybeStrAttr "id" (idToBase pfx bs idd)) ++
         (maybeAttr "start" start) ++
         (maybeAttr "end" end) ++
         (maybeAttr "srcStart" sStart) ++
         (maybeAttr "srcEnd" sEnd))
        [(txt t)])
-
-tokenIdToBase :: String -> Int -> Maybe TokenID -> Maybe String
-tokenIdToBase pfx base = fmap ((pfx++) . (writeBase base))
-{-# INLINE tokenIdToBase #-}

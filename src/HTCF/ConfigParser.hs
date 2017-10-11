@@ -14,6 +14,7 @@ module HTCF.ConfigParser
   , getTcfMetadataNamespace
   , getTcfIdBase
   , getTcfTokenIdPrefix
+  , getTcfSentenceIdPrefix
   , getAbbreviations
   , addAbbreviations
   , getMonths
@@ -25,6 +26,7 @@ module HTCF.ConfigParser
   , defaultTcfMetadataNamespace
   , defaultTcfIdBase
   , defaultTcfTokenIdPrefix
+  , defaultTcfSentenceIdPrefix
   , defaultAbbrev1CharToken
   , defaultSingleDigitOrdinal
   , parseConfig
@@ -38,6 +40,7 @@ module HTCF.ConfigParser
   , pcTcfTextCorpusNamespace
   , pcTcfIdBase
   , pcTcfTokenIdPrefix
+  , pcTcfSentenceIdPrefix
   ) where
 
 import Text.XML.HXT.Core
@@ -68,6 +71,8 @@ data Config =
   | TcfIdBase Int                       -- ^ The base of the IDs used
                                         -- in a TCF file
   | TcfTokenIdPrefix String             -- ^ The prefix of the token
+                                        -- IDs used in a TCF file
+  | TcfSentenceIdPrefix String             -- ^ The prefix of the sentence
                                         -- IDs used in a TCF file
   | Abbreviation String                 -- ^ An abbreviation (string
                                         -- without ending dot)
@@ -118,8 +123,13 @@ defaultTcfMetadataNamespace = "http://www.dspin.de/data/metadata"
 defaultTcfIdBase :: Int
 defaultTcfIdBase = 10
 
+-- | Default prefix for token identifiers.
 defaultTcfTokenIdPrefix :: String
 defaultTcfTokenIdPrefix = "t_"
+
+-- | Default prefix for sentence identifiers.
+defaultTcfSentenceIdPrefix :: String
+defaultTcfSentenceIdPrefix = "s_"
 
 -- | By default, tokens of the length of 1 character are not treated
 -- as abbrevs.
@@ -202,6 +212,13 @@ getTcfTokenIdPrefix [] = defaultTcfTokenIdPrefix
 getTcfTokenIdPrefix ((TcfTokenIdPrefix p):_) = p
 getTcfTokenIdPrefix (_:xs) = getTcfTokenIdPrefix xs
 
+-- | Get the prefix of the sentence IDs in a TCF file. Defaults to
+-- 'defaultTcfSentenceIdPrefix'.
+getTcfSentenceIdPrefix :: [Config] -> String
+getTcfSentenceIdPrefix [] = defaultTcfSentenceIdPrefix
+getTcfSentenceIdPrefix ((TcfSentenceIdPrefix p):_) = p
+getTcfSentenceIdPrefix (_:xs) = getTcfSentenceIdPrefix xs
+
 -- | Get the list of abbreviation strings from config.
 getAbbreviations :: [Config] -> [String]
 getAbbreviations [] = []
@@ -277,7 +294,8 @@ parseConfig =
   pcTcfTextCorpusNamespace <+>
   pcTcfMetadataNamespace <+>
   pcTcfIdBase <+>
-  pcTcfTokenIdPrefix
+  pcTcfTokenIdPrefix <+>
+  pcTcfSentenceIdPrefix
 
 -- | Arrows for parsing special configuration aspects are all prefixed
 -- with pc which stands for parseConfig.
@@ -372,6 +390,12 @@ pcTcfTokenIdPrefix =
   hasName "tcf" >>> getChildren >>>
   hasName "tokenIdPrefix" >>> getAttrValue "prefix" >>>
   arr (TcfTokenIdPrefix . defaultOnNull defaultTcfTokenIdPrefix)
+
+pcTcfSentenceIdPrefix :: IOSArrow XmlTree Config
+pcTcfSentenceIdPrefix =
+  hasName "tcf" >>> getChildren >>>
+  hasName "sentenceIdPrefix" >>> getAttrValue "prefix" >>>
+  arr (TcfSentenceIdPrefix . defaultOnNull defaultTcfSentenceIdPrefix)
 
 -- | Helper function
 defaultOnNull :: [a] -> [a] -> [a]

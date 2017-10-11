@@ -8,19 +8,36 @@ import HTCF.ConfigParser
 
 import HTCF.TokenLayer
 import HTCF.TextLayer
+import HTCF.SentenceLayer
+import HTCF.POStagLayer
+import HTCF.LemmaLayer
+import qualified HTCF.TcfLayers as Ls
 
--- | Run the TCF reader in the IO monad. Use this as an example for
+-- | Run the TCF reader in IO. Use this as an example for
 -- your parser with extra layers.
-runTcfReader :: [Config] -> FilePath -> IO ([Text], [Token] {-, [SomethingElse]-})
+runTcfReader :: [Config] -> FilePath -> IO Ls.TcfLayers
 runTcfReader cfg fname = do
   tree <- runX (readDocument [withValidate no] fname >>>
                 propagateNamespaces
                )
-  (tokenIdPfx, idBase) <- guessAboutTokenId cfg tree
+  (tokenIdPfx, tokenIdBase) <- guessAboutTokenId cfg tree
+  (sentenceIdPfx, sentenceIdBase) <- guessAboutSentenceId cfg tree
   text <- runX (constL tree //>
                 parseTextLayer cfg)
-  tokens <- runX (constL tree //>
-                  parseTokens cfg tokenIdPfx idBase)
+  toks <- runX (constL tree //>
+                  parseTokens cfg tokenIdPfx tokenIdBase)
+  sentences <- runX (constL tree //>
+                    parseSentences cfg sentenceIdPfx sentenceIdBase tokenIdPfx tokenIdBase)
+  posTags <- runX (constL tree //>
+                  parsePOStags cfg tokenIdPfx tokenIdBase)
+  lemmas <- runX (constL tree //>
+                 parseLemmas cfg tokenIdPfx tokenIdBase)
   {-somethingElse <- runX (constL tree //>
                            parseSomethingElse)-}
-  return (text, tokens {-, somethingElse -})
+  return Ls.TcfLayers { Ls.text=text
+                      , Ls.tokens=toks
+                      , Ls.sentences=sentences
+                      , Ls.posTags=posTags
+                      , Ls.lemmas=lemmas
+                      {-, somethingElse -}
+                      }

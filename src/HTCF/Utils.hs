@@ -1,7 +1,9 @@
 module HTCF.Utils
   ( readIntMaybe
   , readBase
+  , parseIDs
   , writeBase
+  , idToBase
   , maybeFun
   , guessBase
   , commonPrefix
@@ -49,6 +51,13 @@ readBase bs str
     num = N.readInt bs isValidDigit letterToNum str
 {-# INLINE readBase #-}
 
+-- | Parse the IDs in String to a list of integers of a given base,
+-- the length of the prefix is stripped.
+parseIDs :: Int -> Int -> String -> [Int]
+parseIDs pfxLen base toks =
+  mapMaybe ((readBase base) . (drop pfxLen)) $ words toks
+{-# INLINE parseIDs #-}
+
 -- | Show an integer number in another base as string.
 writeBase :: Int    -- ^ the base
           -> Int    -- ^ the integer number to show in base
@@ -60,6 +69,12 @@ writeBase base num =
       | n < 10 = intToDigit n
       | otherwise = chr (ord 'a' + n - 10)
 {-# INLINE writeBase #-}
+
+-- | Make an identifier with prefix pfx in base from a Maybe Int
+idToBase :: String -> Int -> Maybe Int -> Maybe String
+idToBase pfx base = fmap ((pfx++) . (writeBase base))
+{-# INLINE idToBase #-}
+
 
 -- * Other
 
