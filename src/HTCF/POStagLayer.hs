@@ -14,6 +14,7 @@ module HTCF.POStagLayer
 
 import Text.XML.HXT.Core
 import Data.Maybe
+import Data.List
 import GHC.Generics
 import qualified Data.ByteString as B
 import qualified Data.Csv as Csv
@@ -49,24 +50,16 @@ instance A.ToJSON POStag
 instance Csv.ToRecord POStag where
   toRecord (POStag tag ids st) =
     Csv.record [ Csv.toField tag
-               , Csv.toField $ concatMap ((++" ") . show) ids
+               , Csv.toField $ intercalate " " $ map show ids
                , Csv.toField st
                ]
 
 -- | 'POStag' is ready to be exported to CSV with text and source
 -- offsets formatted as PostgreSQL's range type.
 instance Csv.ToRecord (PostgresRange POStag) where
-  toRecord (PostgresRange (POStag tg ids tset))
-    = Csv.record [ Csv.toField tg
-                 , Csv.toField $ concatMap ((++" ") . show) ids
-                 , toField' B.empty tset
-                 ]
-
-toField' :: (Csv.ToField a) => B.ByteString -- ^ Default value
-         -> Maybe a -- ^ the maybe field, 
-         -> Csv.Field
-toField' deflt f = maybe deflt Csv.toField f
-
+  toRecord (PostgresRange ptag)
+    = Csv.toRecord ptag
+    
 -- * Getters for the fields of the 'POStag' record.
 
 getPOStag :: POStag -> String
@@ -84,10 +77,12 @@ parsePOStags :: (ArrowXml a) => [Config] -> Int -> Int -> a XmlTree POStag
 parsePOStags cfg pfxLen base =
   --traceMsg 1 ("Parsing POStag layer with prefix length " ++ (show pfxLen) ++ " and base " ++ (show base)) >>> 
   isElem >>> hasQName (mkNsName "POStags" $ getTcfTextCorpusNamespace cfg) >>>
-  getChildren >>>
-  parsePOStag cfg pfxLen base tagset
-  where tagset = "sttl" -- TODO
-
+  parseChildren cfg pfxLen base $< getAttrCaseValue "tagset" -- arr (const "sttla")
+  where
+    parseChildren :: (ArrowXml a) => [Config] -> Int -> Int -> String -> a XmlTree POStag
+    parseChildren cfgg pfxLenn basee tagsett =
+      getChildren >>> parsePOStag cfgg pfxLenn basee tagsett
+        
 parsePOStag :: (ArrowXml a) => [Config] -> Int -> Int -> String -> a XmlTree POStag
 parsePOStag cfg pfxLen base tagset =
   hasQName (mkNsName "tag" $ getTcfTextCorpusNamespace cfg) >>>
