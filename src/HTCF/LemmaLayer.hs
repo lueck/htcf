@@ -70,13 +70,13 @@ getLemmaTokenIDs (Lemma _ ids) = ids
 parseLemmas :: (ArrowXml a) => [Config] -> Int -> Int -> a XmlTree Lemma
 parseLemmas cfg pfxLen base =
   --traceMsg 1 ("Parsing Lemma layer with prefix length " ++ (show pfxLen) ++ " and base " ++ (show base)) >>> 
-  isElem >>> hasQName (mkNsName "lemmas" $ getTcfTextCorpusNamespace cfg) >>>
+  isElem >>> hasQNameCase (mkNsName "lemmas" $ getTcfTextCorpusNamespace cfg) >>>
   getChildren >>>
   parseLemma cfg pfxLen base
 
 parseLemma :: (ArrowXml a) => [Config] -> Int -> Int -> a XmlTree Lemma
 parseLemma cfg pfxLen base =
-  hasQName (mkNsName "lemma" $ getTcfTextCorpusNamespace cfg) >>>
+  hasQNameCase (mkNsName "lemma" $ getTcfTextCorpusNamespace cfg) >>>
   (getChildren >>> getText) &&&
   getAttrCaseValue "tokenIDs" >>>
   arr (\(lem, ids) ->

@@ -5,10 +5,15 @@ module HTCF.ArrowXml
   , stripNames
   , stripQNames
   , getAttrCaseValue
+  , hasQNameCase
+  , getQNameCase
+  , makeQNameCase
   ) where
 
 import Text.XML.HXT.Core
+import qualified Text.XML.HXT.DOM.XmlNode as XN
 import Data.Char
+import Data.Maybe
 
 nameIn :: (ArrowXml a) => [String] -> a XmlTree XmlTree
 nameIn names = (getName >>> isA (flip elem names)) `guards` this
@@ -44,6 +49,23 @@ getAttrCaseValue n =
   where
     n' = upper n
     upper = map toUpper
+{-# INLINE getAttrCaseValue #-}
+
+caseFun :: Char -> Char
+caseFun = toUpper
+{-# INLINE caseFun #-}
+
+makeQNameCase :: QName -> QName
+makeQNameCase n = mkQName (map caseFun $ namePrefix n) (map caseFun $ localPart n) (map caseFun $ namespaceUri n)
+{-# INLINE makeQNameCase #-}
+
+hasQNameCase :: (ArrowXml a) => QName -> a XmlTree XmlTree
+hasQNameCase n = (getQNameCase >>> isA (== (makeQNameCase n))) `guards` this
+{-# INLINE hasQNameCase #-}
+
+getQNameCase :: (ArrowXml a) => a XmlTree QName
+getQNameCase = arrL (maybeToList . (fmap makeQNameCase) . XN.getName)
+{-# INLINE getQNameCase #-}
 
 play :: String -> IO ()
 play fname = do

@@ -104,13 +104,13 @@ getSentenceEndSrcPos (Sentence _ _ _ _ _ e) = e
 parseSentences :: (ArrowXml a) => [Config] -> Int -> Int -> Int -> Int -> a XmlTree Sentence
 parseSentences cfg sentPfxLen sentBase tokPfxLen tokBase =
   --traceMsg 1 ("Parsing sentence layer with prefix length " ++ (show pfxLen) ++ " and base " ++ (show base)) >>> 
-  isElem >>> hasQName (mkNsName "sentences" $ getTcfTextCorpusNamespace cfg) >>>
+  isElem >>> hasQNameCase (mkNsName "sentences" $ getTcfTextCorpusNamespace cfg) >>>
   getChildren >>>
   parseSentence cfg sentPfxLen sentBase tokPfxLen tokBase
 
 parseSentence :: (ArrowXml a) => [Config] -> Int -> Int -> Int -> Int -> a XmlTree Sentence
 parseSentence cfg sentPfxLen sentBase tokPfxLen tokBase =
-  hasQName (mkNsName "sentence" $ getTcfTextCorpusNamespace cfg) >>>
+  hasQNameCase (mkNsName "sentence" $ getTcfTextCorpusNamespace cfg) >>>
   getAttrCaseValue "tokenIDs" &&&
   getAttrCaseValue "ID" &&&
   getAttrCaseValue "start" &&&
@@ -131,7 +131,7 @@ parseSentence cfg sentPfxLen sentBase tokPfxLen tokBase =
 guessAboutSentenceId :: [Config] -> XmlTrees -> IO (Int, Int)
 guessAboutSentenceId cfg tree = do
   ids <- runX (constL tree //>
-               multi (isElem >>> hasQName (mkNsName "sentence" $ getTcfTextCorpusNamespace cfg) >>>
+               multi (isElem >>> hasQNameCase (mkNsName "sentence" $ getTcfTextCorpusNamespace cfg) >>>
                getAttrCaseValue "ID"))
   let pfxLen = length $ commonPrefix $ take 32 $ filter (/= "") ids
   return (pfxLen, (guessBase $ map (drop pfxLen) ids))

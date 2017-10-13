@@ -76,7 +76,7 @@ getPOStagTagSet (POStag _ _ s) = s
 parsePOStags :: (ArrowXml a) => [Config] -> Int -> Int -> a XmlTree POStag
 parsePOStags cfg pfxLen base =
   --traceMsg 1 ("Parsing POStag layer with prefix length " ++ (show pfxLen) ++ " and base " ++ (show base)) >>> 
-  isElem >>> hasQName (mkNsName "POStags" $ getTcfTextCorpusNamespace cfg) >>>
+  isElem >>> hasQNameCase (mkNsName "POStags" $ getTcfTextCorpusNamespace cfg) >>>
   parseChildren cfg pfxLen base $< getAttrCaseValue "tagset" -- arr (const "sttla")
   where
     parseChildren :: (ArrowXml a) => [Config] -> Int -> Int -> String -> a XmlTree POStag
@@ -85,7 +85,7 @@ parsePOStags cfg pfxLen base =
         
 parsePOStag :: (ArrowXml a) => [Config] -> Int -> Int -> String -> a XmlTree POStag
 parsePOStag cfg pfxLen base tagset =
-  hasQName (mkNsName "tag" $ getTcfTextCorpusNamespace cfg) >>>
+  hasQNameCase (mkNsName "tag" $ getTcfTextCorpusNamespace cfg) >>>
   (getChildren >>> getText) &&&
   getAttrCaseValue "tokenIDs" >>>
   arr (\(tag, ids) ->

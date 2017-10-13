@@ -12,6 +12,7 @@ import qualified Data.Csv as Csv
 import qualified Data.Aeson as A
 
 import HTCF.ConfigParser
+import HTCF.ArrowXml
 
 -- | Cf. http://weblicht.sfs.uni-tuebingen.de/weblichtwiki/index.php/The_TCF_Format#Annotation_Layers
 
@@ -35,7 +36,7 @@ getTextText (Text s) = s
 
 parseTextLayer :: (ArrowXml a) => [Config] -> a XmlTree Text
 parseTextLayer cfg =
-  isElem >>> hasQName (mkNsName "text" $ getTcfTextCorpusNamespace cfg) >>>
+  isElem >>> hasQNameCase (mkNsName "text" $ getTcfTextCorpusNamespace cfg) >>>
   getChildren >>>
   isText >>>
   getText >>> arr Text

@@ -107,13 +107,13 @@ getTokenEndSrcPos (Token _ _ _ _ _ e) = e
 parseTokens :: (ArrowXml a) => [Config] -> Int -> Int -> a XmlTree Token
 parseTokens cfg pfxLen base =
   --traceMsg 1 ("Parsing token layer with prefix length " ++ (show pfxLen) ++ " and base " ++ (show base)) >>> 
-  isElem >>> hasQName (mkNsName "tokens" $ getTcfTextCorpusNamespace cfg) >>>
+  isElem >>> hasQNameCase (mkNsName "tokens" $ getTcfTextCorpusNamespace cfg) >>>
   getChildren >>>
   parseToken cfg pfxLen base
 
 parseToken :: (ArrowXml a) => [Config] -> Int -> Int -> a XmlTree Token
 parseToken cfg pfxLen base =
-  hasQName (mkNsName "token" $ getTcfTextCorpusNamespace cfg) >>>
+  hasQNameCase (mkNsName "token" $ getTcfTextCorpusNamespace cfg) >>>
   (getChildren >>> getText) &&&
   getAttrCaseValue "ID" &&&
   getAttrCaseValue "start" &&&
@@ -133,7 +133,7 @@ parseToken cfg pfxLen base =
 guessAboutTokenId :: [Config] -> XmlTrees -> IO (Int, Int)
 guessAboutTokenId cfg tree = do
   ids <- runX (constL tree //>
-               multi (isElem >>> hasQName (mkNsName "token" $ getTcfTextCorpusNamespace cfg) >>>
+               multi (isElem >>> hasQNameCase (mkNsName "token" $ getTcfTextCorpusNamespace cfg) >>>
                getAttrCaseValue "ID"))
   let pfxLen = length $ commonPrefix $ take 32 $ filter (/= "") ids
   return (pfxLen, (guessBase $ map (drop pfxLen) ids))
