@@ -14,10 +14,11 @@ import qualified Data.Aeson as J
 import HTCF.TcfData
 import HTCF.ReadTcf
 import HTCF.ConfigParser
+import HTCF.Range
 
 data Convert =
   Convert { configFile :: String
-          , readLayer :: Maybe ReadLayer
+          -- , readLayer :: Maybe ReadLayer
           , outputMethod :: Maybe OutputMethod
           , csvDelimiter :: String
           , inFile :: String
@@ -34,21 +35,21 @@ convert_ = Convert
                   <> help "Specify a config file. Defaults to config.xml in the current directory."
                   <> value "config.xml"
                   <> metavar "CONFIGFILE")
-  <*> optional ((flag' NoTokenLayer (short 'T'
-                                     <> long "no-tokens"
-                                     <> help "Do not get the token layer (default)."))
-                <|>
-                (flag' NoSentenceLayer (short 'S'
-                                        <> long "no-sentences"
-                                        <> help "Do not get the sentence layer."))
-                <|>
-                (flag' NoPOStagLayer (short 'G'
-                                       <> long "no-postags"
-                                       <> help "Do not get the POStag layer."))
-                <|>
-                (flag' NoLemmaLayer (short 'L'
-                                     <> long "no-lemmas"
-                                     <> help "Do not get the lemma layer.")))
+  -- <*> optional ((flag' NoTokenLayer (short 'T'
+  --                                    <> long "no-tokens"
+  --                                    <> help "Do not get the token layer (default)."))
+  --               <|>
+  --               (flag' NoSentenceLayer (short 'S'
+  --                                       <> long "no-sentences"
+  --                                       <> help "Do not get the sentence layer."))
+  --               <|>
+  --               (flag' NoPOStagLayer (short 'G'
+  --                                      <> long "no-postags"
+  --                                      <> help "Do not get the POStag layer."))
+  --               <|>
+  --               (flag' NoLemmaLayer (short 'L'
+  --                                    <> long "no-lemmas"
+  --                                    <> help "Do not get the lemma layer.")))
   <*> optional ((flag' Csv (short 'v'
                              <> long "csv"
                              <> help "Output as comma separated values (CSV). This is the default output format."))
@@ -72,7 +73,7 @@ convert_ = Convert
   <*> argument str (metavar "INFILE")
 
 run :: Convert -> IO ()
-run (Convert configFile readLayer outputMethod csvDel inFile) = do
+run (Convert configFile outputMethod csvDel inFile) = do
   config <- runConfigParser configFile
   layers <- runTcfReader config inFile
   let
@@ -80,8 +81,10 @@ run (Convert configFile readLayer outputMethod csvDel inFile) = do
       C.encDelimiter = fromIntegral $ ord $ head csvDel
       }
     method = case outputMethod of
-      Just Csv -> (C.encodeWith csvOpts)
+      -- Just Csv -> (C.encodeWith csvOpts) -- default
+      Just CsvPgRange -> (C.encodeWith csvOpts) . (map PostgresRange)
       Just Json -> J.encode
+      Just Raw -> B.pack . show
       otherwise -> (C.encodeWith csvOpts)
   B.putStrLn $ method $ collectTokenData layers
 
@@ -89,5 +92,5 @@ main :: IO ()
 main = execParser opts >>= run
   where opts = info (helper <*> convert_)
           ( fullDesc
-            <> progDesc "Get a layer of a TCF file, ie. an XML file in the Text Corpus Format. Format the output to CSV, JSON etc."
-            <> header "tcflayer - get a layer of a TCF file." )
+            <> progDesc "Collect data about tokens, e.g. POStag, lemma or sentenceId, from the relevant layers of a TCF file, ie. an XML file in the Text Corpus Format. Format the output to CSV, JSON etc."
+            <> header "tcftokens - collect token data from a TCF file." )
