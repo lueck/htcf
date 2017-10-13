@@ -64,12 +64,15 @@ data TcfData =
 
 getTokenID :: TcfData -> Maybe Int
 getTokenID (TcfTokenData _ tid _ _ _ _ _ _ _ _) = tid
+getTokenID _ = Nothing
 
 getToken :: TcfData -> Maybe String
 getToken (TcfTokenData tok _ _ _ _ _ _ _ _ _) = tok
+getToken (TcfFrequency t _) = t
 
 getLemma :: TcfData -> Maybe String
 getLemma (TcfTokenData _ _ _ _ _ _ _ _ lem _) = lem
+getLemma (TcfFrequency t _) = t
 
 -- * Exporting
 
@@ -92,6 +95,7 @@ instance Csv.ToRecord (PostgresRange TcfData) where
                  --, toField' B.empty fTok
                  --, toField' B.empty fLem
                  ]
+  toRecord (PostgresRange d) = Csv.toRecord d
 
 toField' :: (Csv.ToField a) => B.ByteString -- ^ Default value
          -> Maybe a -- ^ the maybe field, 
