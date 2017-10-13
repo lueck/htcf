@@ -21,12 +21,13 @@ layer and in the text structure layer. This makes it possible to
 interrelate the TCF data to semantic annotations that were made to the
 input file (manually) in a standoff manner.
 
-`htcf` also provides a taxi for setting TCF data over to JSON, SQL or
-raw haskell data: the `tcflayer` and `tcftokens` commandline
-programs. They let you specify the output format and which layer to
-get out of the file. It is useful for preparing bulk inserts into a
-database. While `tcflayer` reads a single layer, `tcftokens` collects
-information about tokens from all layers.
+`htcf` also provides a taxi for setting TCF data over to CSV, JSON or
+raw haskell data: the `tcflayer`, `tcftokens` and `tcffreq`
+commandline programs. They let you specify the output format and which
+layer to get out of the file. It is useful for preparing bulk inserts
+into a database. While `tcflayer` reads a single layer, `tcftokens`
+collects information about tokens from all layers. `tcffreq`
+calculates the absolute frequencies of tokens or lemmas in a tcf file.
 
 
 
@@ -43,7 +44,6 @@ information about tokens from all layers.
 | text structure | no             | yes             | yes            | no              |
 </code></pre>
 
-Roadmap: Frequencies in the output of `tcftokens`
 
 ## Installation ##
 
