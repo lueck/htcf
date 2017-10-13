@@ -1,5 +1,6 @@
 module HTCF.ReadTcf
   ( runTcfReader
+  , runTcfLayerReader
   ) where
 
 import Text.XML.HXT.Core
@@ -41,3 +42,16 @@ runTcfReader cfg fname = do
                       , Ls.lemmas=lemmas
                       {-, somethingElse -}
                       }
+
+-- | Run a parser arrow on a parsed xml tree and return the results of
+-- the arrow wrapped in the IO monad.
+runTcfLayerReader :: (Tree a)
+                  => [a c] -- ^ the xml tree
+                  -> [Config] -- ^ configuration
+                  -> Int -- ^ prefix length of token IDs
+                  -> Int -- ^ base of token IDs
+                  -> ([Config] -> Int -> Int -> IOSLA (XIOState ()) (a c) b) -- ^ parser arrow
+                  -> IO [b] -- ^ returns [b] IO action
+runTcfLayerReader tree cfg tokenIdPfx tokenIdBase parser = do
+  rc <- runX (constL tree //> parser cfg tokenIdPfx tokenIdBase)
+  return rc

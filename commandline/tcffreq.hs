@@ -14,6 +14,7 @@ import qualified Data.Aeson as J
 import HTCF.TcfData
 import HTCF.ReadTcf
 import HTCF.ConfigParser
+import HTCF.TcfLayers
 
 data Convert =
   Convert { configFile :: String
@@ -23,9 +24,9 @@ data Convert =
           , inFile :: String
           }
 
-data OutputMethod = Csv | CsvPgRange | Json | Raw
+data OutputMethod = Csv | Json | Raw
 
-data ReadLayer = NoTokenLayer | NoSentenceLayer | NoPOStagLayer | NoLemmaLayer 
+data ReadLayer = TokenLayer | LemmaLayer 
 
 convert_ :: Parser Convert
 convert_ = Convert
@@ -34,29 +35,16 @@ convert_ = Convert
                   <> help "Specify a config file. Defaults to config.xml in the current directory."
                   <> value "config.xml"
                   <> metavar "CONFIGFILE")
-  <*> optional ((flag' NoTokenLayer (short 'T'
-                                     <> long "no-tokens"
-                                     <> help "Do not get the token layer (default)."))
+  <*> optional ((flag' TokenLayer (short 't'
+                                     <> long "tokens"
+                                     <> help "Calculate the frequencies of tokens (default)."))
                 <|>
-                (flag' NoSentenceLayer (short 'S'
-                                        <> long "no-sentences"
-                                        <> help "Do not get the sentence layer."))
-                <|>
-                (flag' NoPOStagLayer (short 'G'
-                                       <> long "no-postags"
-                                       <> help "Do not get the POStag layer."))
-                <|>
-                (flag' NoLemmaLayer (short 'L'
-                                     <> long "no-lemmas"
-                                     <> help "Do not get the lemma layer.")))
+                (flag' LemmaLayer (short 'l'
+                                     <> long "lemmas"
+                                     <> help "Calcualte the frequencies of lemmas.")))
   <*> optional ((flag' Csv (short 'v'
                              <> long "csv"
                              <> help "Output as comma separated values (CSV). This is the default output format."))
-                <|>
-                (flag' CsvPgRange (short 'p'
-                                   <> long "csv-pg-range"
-                                   <> help "Output as comma separated values (CSV), but format text offsets and source offsets as PostgreSQL's range type, i.e. '...,\"[textStart,textEnd]\",\"[sourceStart,sourceEnd]\",...'. Since the range contains a comma, it is quoted, if the CSV delimiter is set to comma (default)."))
-
                 <|>
                 (flag' Json (short 'j'
                               <> long "json"
@@ -83,11 +71,17 @@ run (Convert configFile readLayer outputMethod csvDel inFile) = do
       Just Csv -> (C.encodeWith csvOpts)
       Just Json -> J.encode
       otherwise -> (C.encodeWith csvOpts)
-  B.putStrLn $ method $ collectTokenData layers
+    freqs = case readLayer of
+      -- Just LemmaLayer -> map getToken $ tokensFromLemmas $ getLemmas layers
+      -- otherwise -> map getLemma $ map fromToken $ getTokens layers
+      Just LemmaLayer -> frequencies getLemma $ tokensFromLemmas $ getLemmas layers
+      otherwise -> frequencies getToken $ map fromToken $ getTokens layers
+  B.putStrLn $ method freqs
+  --print freqs
 
 main :: IO ()
 main = execParser opts >>= run
   where opts = info (helper <*> convert_)
           ( fullDesc
-            <> progDesc "Get a layer of a TCF file, ie. an XML file in the Text Corpus Format. Format the output to CSV, JSON etc."
-            <> header "tcflayer - get a layer of a TCF file." )
+            <> progDesc "Calculate the relative frequencies of tokens or lemmas given in a TCF file, ie. an XML file in the Text Corpus Format. Format the output to CSV, JSON etc."
+            <> header "tcffreq - calculate token frequencies." )
