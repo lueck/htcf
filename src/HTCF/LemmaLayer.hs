@@ -13,6 +13,7 @@ module HTCF.LemmaLayer
 
 import Text.XML.HXT.Core
 import Data.Maybe
+import Data.List
 import GHC.Generics
 import qualified Data.ByteString as B
 import qualified Data.Csv as Csv
@@ -47,21 +48,14 @@ instance A.ToJSON Lemma
 instance Csv.ToRecord Lemma where
   toRecord (Lemma l ids)
     = Csv.record [ Csv.toField l
-                 , Csv.toField $ concatMap ((++" ") . (show)) ids
+                 , Csv.toField $ intercalate " " $ map show ids
                  ]
 
 -- | 'Lemma' is ready to be exported to CSV with text and source
 -- offsets formatted as PostgreSQL's range type.
 instance Csv.ToRecord (PostgresRange Lemma) where
-  toRecord (PostgresRange (Lemma l ids))
-    = Csv.record [ Csv.toField l
-                 , Csv.toField $ concatMap ((++" ") . (show)) ids
-                 ]
-
-toField' :: (Csv.ToField a) => B.ByteString -- ^ Default value
-         -> Maybe a -- ^ the maybe field, 
-         -> Csv.Field
-toField' deflt f = maybe deflt Csv.toField f
+  toRecord (PostgresRange l)
+    = Csv.toRecord l
 
 -- * Getters for the fields of the 'Lemma' record.
 

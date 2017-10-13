@@ -6,6 +6,7 @@ module HTCF.SentenceLayer where
 
 import Text.XML.HXT.Core
 import Data.Maybe
+import Data.List
 import GHC.Generics
 import qualified Data.ByteString as B
 import qualified Data.Csv as Csv
@@ -51,7 +52,7 @@ instance A.ToJSON Sentence
 -- | 'Sentence' is ready to be exported to CSV.
 instance Csv.ToRecord Sentence where
   toRecord (Sentence ids sentenceId start end srcStart srcEnd)
-    = Csv.record [ Csv.toField $ concatMap ((++" ") . (show)) ids
+    = Csv.record [ Csv.toField $ intercalate " " $ map show ids
                  , toField' B.empty sentenceId
                  , toField' B.empty start
                  , toField' B.empty end
@@ -63,7 +64,7 @@ instance Csv.ToRecord Sentence where
 -- offsets formatted as PostgreSQL's range type.
 instance Csv.ToRecord (PostgresRange Sentence) where
   toRecord (PostgresRange (Sentence ids sentenceId start end srcStart srcEnd))
-    = Csv.record [ Csv.toField $ concatMap ((++" ") . (show)) ids
+    = Csv.record [ Csv.toField $ intercalate " " $ map show ids
                  , toField' B.empty sentenceId
                  , (B.concat [ "[", (toField' "NULL" start), ","
                              , (toField' "NULL" end), "]"])
