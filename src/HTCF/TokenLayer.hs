@@ -69,18 +69,11 @@ instance Csv.ToRecord Token
 instance Csv.ToRecord (PostgresRange Token) where
   toRecord (PostgresRange (Token token tokenId start end srcStart srcEnd))
     = Csv.record [ Csv.toField token
-                 , toField' B.empty tokenId
-                 , (B.concat [ "[", (toField' "NULL" start), ","
-                             , (toField' "NULL" end), "]"])
-                 , (B.concat [ "[", (toField' "NULL" srcStart), ","
-                             , (toField' "NULL" srcEnd), "]"])
+                 , maybeToField B.empty tokenId
+                 , toPgRange start end
+                 , toPgRange srcStart srcEnd
                  ]
 
-toField' :: (Csv.ToField a) => B.ByteString -- ^ Default value
-         -> Maybe a -- ^ the maybe field, 
-         -> Csv.Field
-toField' deflt f = maybe deflt Csv.toField f 
-   
 
 -- * Getters for the fields of the 'Token' record.
 

@@ -30,6 +30,7 @@ import qualified Data.HashMap.Lazy as HashMap
 import HTCF.TcfLayers
 import HTCF.Position
 import HTCF.Range
+import HTCF.Utils
 import qualified HTCF.TokenLayer as T
 import qualified HTCF.SentenceLayer as S
 import qualified HTCF.POStagLayer as P
@@ -79,24 +80,17 @@ instance Csv.ToRecord TcfData
 
 instance Csv.ToRecord (PostgresRange TcfData) where
   toRecord (PostgresRange (TcfTokenData tok tid tStart tEnd sStart sEnd ptag tset lem sid))
-    = Csv.record [ toField' B.empty tok
-                 , toField' B.empty tid
-                 , (B.concat [ "[", (toField' "NULL" tStart), ","
-                             , (toField' "NULL" tEnd), "]"])
-                 , (B.concat [ "[", (toField' "NULL" sStart), ","
-                             , (toField' "NULL" sEnd), "]"])
-                 , toField' B.empty ptag
-                 , toField' B.empty tset
-                 , toField' B.empty lem
-                 , toField' B.empty sid
-                 --, toField' B.empty fTok
-                 --, toField' B.empty fLem
+    = Csv.record [ maybeToField B.empty tok
+                 , maybeToField B.empty tid
+                 , toPgRange tStart tEnd
+                 , toPgRange sStart sEnd
+                 , maybeToField B.empty ptag
+                 , maybeToField B.empty tset
+                 , maybeToField B.empty lem
+                 , maybeToField B.empty sid
+                 --, maybeToField B.empty fTok
+                 --, maybeToField B.empty fLem
                  ]
-
-toField' :: (Csv.ToField a) => B.ByteString -- ^ Default value
-         -> Maybe a -- ^ the maybe field, 
-         -> Csv.Field
-toField' deflt f = maybe deflt Csv.toField f
 
 
 -- * Merging parsed data to common algebraic data type TcfData

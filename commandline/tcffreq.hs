@@ -68,15 +68,15 @@ run (Convert configFile readLayer outputMethod csvDel inFile) = do
       C.encDelimiter = fromIntegral $ ord $ head csvDel
       }
     method = case outputMethod of
-      Just Csv -> (C.encodeWith csvOpts)
-      Just Json -> J.encode
-      otherwise -> (C.encodeWith csvOpts)
+      Just Csv -> B.putStr . (C.encodeWith csvOpts)
+      Just Json -> B.putStrLn . J.encode
+      otherwise -> B.putStr . (C.encodeWith csvOpts)
     freqs = case readLayer of
       -- Just LemmaLayer -> map getToken $ tokensFromLemmas $ getLemmas layers
       -- otherwise -> map getLemma $ map fromToken $ getTokens layers
       Just LemmaLayer -> frequencies getLemma $ tokensFromLemmas $ getLemmas layers
       otherwise -> frequencies getToken $ map fromToken $ getTokens layers
-  B.putStrLn $ method freqs
+  method freqs
   --print freqs
 
 main :: IO ()

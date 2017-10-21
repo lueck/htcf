@@ -53,11 +53,11 @@ instance A.ToJSON Sentence
 instance Csv.ToRecord Sentence where
   toRecord (Sentence ids sentenceId start end srcStart srcEnd)
     = Csv.record [ Csv.toField $ intercalate " " $ map show ids
-                 , toField' B.empty sentenceId
-                 , toField' B.empty start
-                 , toField' B.empty end
-                 , toField' B.empty srcStart
-                 , toField' B.empty srcEnd
+                 , maybeToField B.empty sentenceId
+                 , maybeToField B.empty start
+                 , maybeToField B.empty end
+                 , maybeToField B.empty srcStart
+                 , maybeToField B.empty srcEnd
                  ]
 
 -- | 'Sentence' is ready to be exported to CSV with text and source
@@ -65,18 +65,11 @@ instance Csv.ToRecord Sentence where
 instance Csv.ToRecord (PostgresRange Sentence) where
   toRecord (PostgresRange (Sentence ids sentenceId start end srcStart srcEnd))
     = Csv.record [ Csv.toField $ intercalate " " $ map show ids
-                 , toField' B.empty sentenceId
-                 , (B.concat [ "[", (toField' "NULL" start), ","
-                             , (toField' "NULL" end), "]"])
-                 , (B.concat [ "[", (toField' "NULL" srcStart), ","
-                             , (toField' "NULL" srcEnd), "]"])
+                 , maybeToField B.empty sentenceId
+                 , toPgRange start end
+                 , toPgRange srcStart srcEnd
                  ]
 
-toField' :: (Csv.ToField a) => B.ByteString -- ^ Default value
-         -> Maybe a -- ^ the maybe field, 
-         -> Csv.Field
-toField' deflt f = maybe deflt Csv.toField f
-   
 
 -- * Getters for the fields of the 'Sentence' record.
 

@@ -51,7 +51,7 @@ instance Csv.ToRecord POStag where
   toRecord (POStag tag ids st) =
     Csv.record [ Csv.toField tag
                , Csv.toField $ intercalate " " $ map show ids
-               , Csv.toField st
+               , maybeToField B.empty st
                ]
 
 -- | 'POStag' is ready to be exported to CSV with text and source

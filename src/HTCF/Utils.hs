@@ -8,6 +8,7 @@ module HTCF.Utils
   , guessBase
   , commonPrefix
   , collectIds
+  , maybeToField
   ) where
 
 import qualified Data.ByteString.Char8 as C
@@ -16,6 +17,8 @@ import Data.Char (ord, digitToInt, isDigit, intToDigit, chr)
 import Data.Maybe
 import Text.XML.HXT.Core
 import qualified Text.XML.HXT.DOM.XmlNode as XN
+import qualified Data.ByteString as B
+import qualified Data.Csv as Csv
 
 -- * Parse a string representation of a number into an integer.
 
@@ -115,3 +118,9 @@ collectIds (XN.NTree n cs)
   | XN.isElem n = (fromMaybe [] $ fmap (concatMap collectIds) $ XN.getAttrl n) ++ (concatMap collectIds cs)
   | XN.isAttr n && (XN.getLocalPart n == Just "id") = (fromMaybe "" $ XN.getText $ head cs):[]
   | otherwise = concatMap collectIds cs
+
+-- | Convert maybe to csv, with default when Nothing.
+maybeToField :: (Csv.ToField a) => B.ByteString -- ^ Default value
+         -> Maybe a -- ^ the maybe field, 
+         -> Csv.Field
+maybeToField deflt f = maybe deflt Csv.toField f 
