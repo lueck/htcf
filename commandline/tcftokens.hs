@@ -81,12 +81,12 @@ run (Convert configFile outputMethod csvDel inFile) = do
       C.encDelimiter = fromIntegral $ ord $ head csvDel
       }
     method = case outputMethod of
-      -- Just Csv -> (C.encodeWith csvOpts) -- default
-      Just CsvPgRange -> (C.encodeWith csvOpts) . (map PostgresRange)
-      Just Json -> J.encode
-      Just Raw -> B.pack . show
-      otherwise -> (C.encodeWith csvOpts)
-  B.putStrLn $ method $ collectTokenData layers
+      -- Just Csv -> B.putStr . (C.encodeWith csvOpts) -- default
+      Just CsvPgRange -> B.putStr . (C.encodeWith csvOpts) . (map PostgresRange)
+      Just Json -> B.putStrLn . J.encode
+      Just Raw -> B.putStrLn . B.pack . show
+      otherwise -> B.putStr . (C.encodeWith csvOpts)
+  method $ collectTokenData layers
 
 main :: IO ()
 main = execParser opts >>= run

@@ -275,7 +275,7 @@ runConfigParser fname = do
                           multi parseConfig)
        ; return results}
     else
-    do { hPutStrLn stderr (progName ++ ": No config file found. Using empty config")
+    do { hPutStrLn stderr (progName ++ ": No config file found. Using default config")
        ; return [] }
 
 -- | An arrow for parsing the config file. Cf. implementation of
