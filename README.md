@@ -1,6 +1,6 @@
 [![License GPLv3](https://img.shields.io/badge/license-GPL_3-green.svg)](http://www.gnu.org/licenses/gpl-3.0.txt)
 
-# htfc - Haskell library and executable for generating and parsing files in Text Corpus Format (TCF) #
+# htfc - Haskell library and executables for generating and parsing files in Text Corpus Format (TCF) #
 
 The
 [`Text Corpus Format (TCF)`](http://weblicht.sfs.uni-tuebingen.de/weblichtwiki/index.php/The_TCF_Format)
@@ -13,21 +13,22 @@ input.
 
 `htcf` provides the `xml2tcf` commandline program that takes an XML
 input file, e.g. in TEI P5 format, and generates TCF layers from
-it. `xml2tcf` has a fancy feature: It does not only provide a start
-and end character offsets of the tokens in relation to the text layer,
-but also in relation to the source file form the input. These offsets
-are provided in all layers, where it makes sense, e.g. in the tokens
-layer and in the text structure layer. This makes it possible to
-interrelate the TCF data to semantic annotations that were made to the
-input file (manually) in a standoff manner.
+it. `xml2tcf` has a neat feature: It does not only provide a start and
+end character offsets of the tokens in relation to the text layer, but
+also in relation to the source file form the input. These offsets are
+provided in all layers, where it makes sense, e.g. in the tokens layer
+and in the text structure layer. This makes it possible to interrelate
+the TCF data to semantic annotations that were made to the input file
+(manually) in a standoff manner.
 
 `htcf` also provides a taxi for setting TCF data over to CSV, JSON or
 raw haskell data: the `tcflayer`, `tcftokens` and `tcffreq`
 commandline programs. They let you specify the output format and which
-layer to get out of the file. It is useful for preparing bulk inserts
-into a database. While `tcflayer` reads a single layer, `tcftokens`
-collects information about tokens from all layers. `tcffreq`
-calculates the absolute frequencies of tokens or lemmas in a tcf file.
+layer to get out of the file. They are useful for preparing bulk
+inserts into a database. While `tcflayer` reads a single layer,
+`tcftokens` collects information about tokens from all
+layers. `tcffreq` calculates the absolute frequencies of tokens or
+lemmas in a tcf file.
 
 
 
@@ -38,12 +39,13 @@ calculates the absolute frequencies of tokens or lemmas in a tcf file.
 |----------------+----------------+-----------------+----------------+-----------------|
 | text           | yes            | yes             | yes            | yes             |
 | tokens         | yes            | yes             | yes            | yes             |
-| sentences      | yes            | yes             |                | yes             |
-| POStags        | yes            | yes             |                | yes             |
-| lemmas         | yes            | yes             |                | yes             |
+| sentences      | yes            | yes             | no             | yes             |
+| POStags        | yes            | yes             | no             | yes             |
+| lemmas         | yes            | yes             | no             | yes             |
 | text structure | no             | yes             | yes            | no              |
 </code></pre>
 
+Roadmap: read text structure
 
 ## Installation ##
 
@@ -135,16 +137,17 @@ make sense here.
 
 ## Caveat ##
 
-When reading TCF data with `tcflayer`, it automatically parses the IDs
-of tokens, sentences etc. into integer counts. For that purpose the
-common prefix of the tokens is stripped and the base of the resting
-numerical part is calculated from the length of the "alphabet" of
-digits in the numerical parts. This works for prefixed IDs encoded in
-binary, octet, decimal, hexadecimal etc. format. But it only *works as
-long as the count of tokens is not lesser than the base of their
-IDs*. So you might run into problems with short texts. And there is an
-additional constraint: The alphabet must utilize characters out of 0-9
-first and a-z then, in ascending order.
+When reading TCF data with `tcflayer`, `tcftokens` or `tcffreq`, it
+automatically parses the IDs of tokens, sentences etc. into integer
+counts. For that purpose the common prefix of the tokens is stripped
+and the base of the resting numerical part is calculated from the
+length of the "alphabet" of digits in the numerical parts. This works
+for prefixed IDs encoded in binary, octet, decimal, hexadecimal
+etc. format. But it only *works as long as the count of tokens is not
+lesser than the base of their IDs*. So you might run into problems
+with short texts. And there is an additional constraint: The alphabet
+must utilize contigous characters out of 0-9 first and a-z then, in
+ascending order.
 
 ## License ##
 
