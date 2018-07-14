@@ -43,7 +43,7 @@ library
                    , HTCF.Range
   -- other-modules:       
   -- other-extensions:    
-  build-depends:     base >=4.9 && <4.10
+  build-depends:     base >=4.9 && <6
                    , bytestring >= 0.10.8.1
                    , containers >= 0.5.7.1
                    , unordered-containers
@@ -58,7 +58,7 @@ library
 
 Executable xml2tcf
   main-is:           xml2tcf.hs
-  build-depends:     base >=4.9 && <4.10
+  build-depends:     base >=4.9 && <6
                    , containers >= 0.5.7.1
                    , unordered-containers
                    , hxt
@@ -74,7 +74,7 @@ Executable xml2tcf
 
 Executable tcflayer
   main-is:           tcflayer.hs
-  build-depends:     base >=4.9 && <4.10
+  build-depends:     base >=4.9 && <6
                    , containers >= 0.5.7.1
                    , unordered-containers
                    , hxt
@@ -92,7 +92,7 @@ Executable tcflayer
 
 Executable tcftokens
   main-is:           tcftokens.hs
-  build-depends:     base >=4.9 && <4.10
+  build-depends:     base >=4.9 && <6
                    , containers >= 0.5.7.1
                    , unordered-containers
                    , hxt
@@ -110,7 +110,7 @@ Executable tcftokens
 
 Executable tcffreq
   main-is:           tcffreq.hs
-  build-depends:     base >=4.9 && <4.10
+  build-depends:     base >=4.9 && <6
                    , containers >= 0.5.7.1
                    , unordered-containers
                    , hxt
@@ -157,7 +157,7 @@ Test-Suite test-main
                    , Test.HTCF.ConfigParser
                    , Test.HTCF.TcfParser
                    , Test.HTCF.Tokenizer
-  build-depends:     base >=4.9 && <4.10
+  build-depends:     base >=4.9 && <6
                    , containers >= 0.5.7.1
                    , unordered-containers
                    , hxt
