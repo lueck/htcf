@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DisambiguateRecordFields #-}
+{-# LANGUAGE TemplateHaskell #-}
 module HTCF.TokenLayer
   ( Token (..)
   , getToken
@@ -22,8 +23,9 @@ import GHC.Generics
 import qualified Data.ByteString as B
 import qualified Data.Csv as Csv
 import qualified Data.Aeson as A
+import Control.Lens
 
-import HTCF.ConfigParser
+import HTCF.Config
 import HTCF.Position
 import HTCF.Utils
 import HTCF.ArrowXml
@@ -40,21 +42,23 @@ import HTCF.Range
 
 -- | Represents a single token
 data Token = Token                      
-  { token :: String                   -- ^ the token
-  , tokenId :: Maybe Int              -- ^ the token's ID
-  , start :: Maybe TextPosition       -- ^ start character offset
+  { _token_token :: String            -- ^ the token
+  , _token_id :: Maybe Int       -- ^ the token's ID
+  , _token_start :: Maybe TextPosition -- ^ start character offset
                                       -- position in relation to text
                                       -- layer
-  , end :: Maybe TextPosition         -- ^ end character offset
+  , _token_end :: Maybe TextPosition  -- ^ end character offset
                                       -- position in relation to text
                                       -- layer
-  , srcStart :: Maybe XmlPosition     -- ^ start character offset
+  , _token_srcStart :: Maybe XmlPosition -- ^ start character offset
                                       -- position in relation to XML
                                       -- source file
-  , srcEnd :: Maybe XmlPosition       -- ^ end character offset
+  , _token_srcEnd :: Maybe XmlPosition -- ^ end character offset
                                       -- position in relation to XML
                                       -- source file
   } deriving (Show, Eq, Generic)
+
+makeLenses ''Token
 
 -- * Exporting
 
@@ -79,34 +83,40 @@ instance Csv.ToRecord (PostgresRange Token) where
 
 getToken :: Token -> String
 getToken (Token t _ _ _ _ _) = t
+{-# DEPRECATED getToken "Use lenses instead!" #-}
 
 getTokenID :: Token -> Maybe Int
 getTokenID (Token _ idd _ _ _ _) = idd
+{-# DEPRECATED getTokenID "Use lenses instead!" #-}
 
 getTokenStartTextPos :: Token -> Maybe TextPosition
 getTokenStartTextPos (Token _ _ s _ _ _) = s
+{-# DEPRECATED getTokenStartTextPos "Use lenses instead!" #-}
 
 getTokenEndTextPos :: Token -> Maybe TextPosition
 getTokenEndTextPos (Token _ _ _ e _ _) = e
+{-# DEPRECATED getTokenEndTextPos "Use lenses instead!" #-}
 
 getTokenStartSrcPos :: Token -> Maybe XmlPosition
 getTokenStartSrcPos (Token _ _ _ _ s _) = s
+{-# DEPRECATED getTokenStartSrcPos "Use lenses instead!" #-}
 
 getTokenEndSrcPos :: Token -> Maybe XmlPosition
 getTokenEndSrcPos (Token _ _ _ _ _ e) = e
+{-# DEPRECATED getTokenEndSrcPos "Use lenses instead!" #-}
 
 -- * Arrows for reading a tcf token layer.
 
-parseTokens :: (ArrowXml a) => [Config] -> Int -> Int -> a XmlTree Token
+parseTokens :: (ArrowXml a) => Config -> Int -> Int -> a XmlTree Token
 parseTokens cfg pfxLen base =
   --traceMsg 1 ("Parsing token layer with prefix length " ++ (show pfxLen) ++ " and base " ++ (show base)) >>> 
-  isElem >>> hasQNameCase (mkNsName "tokens" $ getTcfTextCorpusNamespace cfg) >>>
+  isElem >>> hasQNameCase (mkNsName "tokens" $ _cfg_tcfTextCorpusNamespace cfg) >>>
   getChildren >>>
   parseToken cfg pfxLen base
 
-parseToken :: (ArrowXml a) => [Config] -> Int -> Int -> a XmlTree Token
+parseToken :: (ArrowXml a) => Config -> Int -> Int -> a XmlTree Token
 parseToken cfg pfxLen base =
-  hasQNameCase (mkNsName "token" $ getTcfTextCorpusNamespace cfg) >>>
+  hasQNameCase (mkNsName "token" $ _cfg_tcfTextCorpusNamespace cfg) >>>
   (getChildren >>> getText) &&&
   getAttrCaseValue "ID" &&&
   getAttrCaseValue "start" &&&
@@ -123,10 +133,10 @@ parseToken cfg pfxLen base =
            (readIntMaybe $ Just sE)))
 {-# INLINE parseToken #-}
 
-guessAboutTokenId :: [Config] -> XmlTrees -> IO (Int, Int)
+guessAboutTokenId :: Config -> XmlTrees -> IO (Int, Int)
 guessAboutTokenId cfg tree = do
   ids <- runX (constL tree //>
-               multi (isElem >>> hasQNameCase (mkNsName "token" $ getTcfTextCorpusNamespace cfg) >>>
+               multi (isElem >>> hasQNameCase (mkNsName "token" $ _cfg_tcfTextCorpusNamespace cfg) >>>
                getAttrCaseValue "ID"))
   let pfxLen = length $ commonPrefix $ take 32 $ filter (/= "") ids
   return (pfxLen, (guessBase $ map (drop pfxLen) ids))
@@ -134,13 +144,13 @@ guessAboutTokenId cfg tree = do
 -- * Arrows for writing the tcf token layer.
 
 -- | Arrow for writing the token layer.
-writeTokenLayer :: (ArrowXml a) => [Config] -- ^ the config
+writeTokenLayer :: (ArrowXml a) => Config   -- ^ the config
                 -> [Token]                  -- ^ the list of tokens
                 -> a XmlTree XmlTree        -- ^ returns an xml arrow
 writeTokenLayer cfg ts =
-  let base = getTcfIdBase cfg
-      prefix = getTcfTokenIdPrefix cfg
-      ns = getTcfTextCorpusNamespace cfg in
+  let base = _cfg_tcfIdBase cfg
+      prefix = _cfg_tcfTokenIdPrefix cfg
+      ns = _cfg_tcfTextCorpusNamespace cfg in
     (mkqelem
      (mkNsName "tokens" ns) -- qname
      [] -- attribute nodes

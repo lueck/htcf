@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, FlexibleContexts, OverloadedStrings #-}
+{-# LANGUAGE CPP, FlexibleContexts, OverloadedStrings, ScopedTypeVariables #-}
 import System.IO
 import Options.Applicative
 import Data.Monoid ((<>))
@@ -10,10 +10,12 @@ import qualified Data.IntMap.Lazy as IntMap
 import qualified Data.Csv as C
 import qualified Data.ByteString.Lazy.Char8 as B
 import qualified Data.Aeson as J
+import Data.Default.Class
 
 import HTCF.TcfData
 import HTCF.ReadTcf
-import HTCF.ConfigParser
+import HTCF.Config
+--import HTCF.ConfigParser
 import HTCF.Range
 
 data Convert =
@@ -74,7 +76,8 @@ convert_ = Convert
 
 run :: Convert -> IO ()
 run (Convert configFile outputMethod csvDel inFile) = do
-  config <- runConfigParser configFile
+  let config::Config = def
+  --config <- runConfigParser configFile
   layers <- runTcfReader config inFile
   let
     csvOpts = C.defaultEncodeOptions {

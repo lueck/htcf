@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DisambiguateRecordFields #-}
+{-# LANGUAGE TemplateHaskell #-}
 module HTCF.LemmaLayer
   ( Lemma (..)
   , getLemma
@@ -18,8 +19,9 @@ import GHC.Generics
 import qualified Data.ByteString as B
 import qualified Data.Csv as Csv
 import qualified Data.Aeson as A
+import Control.Lens
 
-import HTCF.ConfigParser
+import HTCF.Config
 import HTCF.Utils
 import HTCF.ArrowXml
 import HTCF.Range
@@ -35,9 +37,11 @@ import HTCF.Range
 
 -- | Represents a single Lemma
 data Lemma = Lemma                      
-  { lemma :: String                   -- ^ the Lemma
-  , tokenIDs :: [Int]                  -- ^ the token IDs
+  { _lemma_lemma :: String      -- ^ the Lemma
+  , _lemma_tokenIDs :: [Int]    -- ^ the token IDs
   } deriving (Show, Eq, Generic)
+
+makeLenses ''Lemma
 
 -- * Exporting
 
@@ -61,22 +65,24 @@ instance Csv.ToRecord (PostgresRange Lemma) where
 
 getLemma :: Lemma -> String
 getLemma (Lemma l _) = l
+{-# DEPRECATED getLemma "Use lenses instead!" #-}
 
 getLemmaTokenIDs :: Lemma -> [Int]
 getLemmaTokenIDs (Lemma _ ids) = ids
+{-# DEPRECATED getLemmaTokenIDs "Use lenses instead!" #-}
 
 -- * Arrows for reading a tcf lemma layer.
 
-parseLemmas :: (ArrowXml a) => [Config] -> Int -> Int -> a XmlTree Lemma
+parseLemmas :: (ArrowXml a) => Config -> Int -> Int -> a XmlTree Lemma
 parseLemmas cfg pfxLen base =
   --traceMsg 1 ("Parsing Lemma layer with prefix length " ++ (show pfxLen) ++ " and base " ++ (show base)) >>> 
-  isElem >>> hasQNameCase (mkNsName "lemmas" $ getTcfTextCorpusNamespace cfg) >>>
+  isElem >>> hasQNameCase (mkNsName "lemmas" $ _cfg_tcfTextCorpusNamespace cfg) >>>
   getChildren >>>
   parseLemma cfg pfxLen base
 
-parseLemma :: (ArrowXml a) => [Config] -> Int -> Int -> a XmlTree Lemma
+parseLemma :: (ArrowXml a) => Config -> Int -> Int -> a XmlTree Lemma
 parseLemma cfg pfxLen base =
-  hasQNameCase (mkNsName "lemma" $ getTcfTextCorpusNamespace cfg) >>>
+  hasQNameCase (mkNsName "lemma" $ _cfg_tcfTextCorpusNamespace cfg) >>>
   (getChildren >>> getText) &&&
   getAttrCaseValue "tokenIDs" >>>
   arr (\(lem, ids) ->
@@ -88,13 +94,13 @@ parseLemma cfg pfxLen base =
 -- * Arrows for writing the tcf lemma layer.
 
 -- | Arrow for writing the lemma layer.
-writeLemmaLayer :: (ArrowXml a) => [Config] -- ^ the config
+writeLemmaLayer :: (ArrowXml a) => Config   -- ^ the config
                 -> [Lemma]                  -- ^ the list of lemmas
                 -> a XmlTree XmlTree        -- ^ returns an xml arrow
 writeLemmaLayer cfg ts =
-  let base = getTcfIdBase cfg
-      prefix = getTcfTokenIdPrefix cfg
-      ns = getTcfTextCorpusNamespace cfg in
+  let base = _cfg_tcfIdBase cfg
+      prefix = _cfg_tcfTokenIdPrefix cfg
+      ns = _cfg_tcfTextCorpusNamespace cfg in
     (mkqelem
      (mkNsName "lemmas" ns) -- qname
      [] -- attribute nodes

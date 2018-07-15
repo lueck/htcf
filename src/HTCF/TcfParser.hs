@@ -13,7 +13,7 @@ import Data.Maybe
 
 import HTCF.TcfParserTypeDefs
 import HTCF.Position
-import HTCF.ConfigParser
+import HTCF.Config
 import HTCF.ArrowXml
 
 -- | @mkTcfElement@ can be used to generate a (deterministic) list of
@@ -23,7 +23,7 @@ import HTCF.ArrowXml
 -- tokenizer information.
 --
 -- Usage: @multi mkTcfElement@
-mkTcfElement :: [Config] -> IOSLA (XIOState [Int]) XmlTree TcfElement
+mkTcfElement :: Config -> IOSLA (XIOState [Int]) XmlTree TcfElement
 mkTcfElement cfg =
   mkTcfStructure <+>
   mkTcfText <+>
@@ -32,7 +32,7 @@ mkTcfElement cfg =
 
 -- | Like 'mkTcfElement', but without structure elements. Use this
 -- instead of @mkTcfElement@ if no structure layer is to be produced.
-mkTcfElementButStructure :: [Config] -> IOSLA (XIOState [Int]) XmlTree TcfElement
+mkTcfElementButStructure :: Config -> IOSLA (XIOState [Int]) XmlTree TcfElement
 mkTcfElementButStructure cfg =
   mkTcfText <+>
   mkTcfTextFromCharRef <+>
@@ -81,8 +81,8 @@ collectText (XN.NTree n cs)
 
 -- | An arrow for parsing line breaks and gerating a signal for the
 -- tokenizer.
-mkTcfLineBreak :: [Config] -> IOSLA (XIOState [Int]) XmlTree TcfElement
+mkTcfLineBreak :: Config -> IOSLA (XIOState [Int]) XmlTree TcfElement
 mkTcfLineBreak cfg =
   isElem >>>
-  (qNameIn $ getLineBreaks cfg) >>>
+  (qNameIn $ _cfg_lineBreaks cfg) >>>
   arr (const TcfLineBreak)

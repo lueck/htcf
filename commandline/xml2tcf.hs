@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, FlexibleContexts #-}
+{-# LANGUAGE CPP, FlexibleContexts,ScopedTypeVariables #-}
 module Main where
 
 import System.IO
@@ -8,8 +8,11 @@ import Data.Monoid ((<>))
 import Text.XML.HXT.Core
 import Text.XML.HXT.Arrow.XmlState.RunIOStateArrow (runXIOState, initialState)
 import Data.Maybe
+import Data.Default.Class
+import Control.Lens hiding (argument)
 
-import HTCF.ConfigParser
+import HTCF.Config
+--import HTCF.ConfigParser
 import HTCF.TcfParser
 import HTCF.TcfParserTypeDefs
 import HTCF.TokenLayer
@@ -54,7 +57,8 @@ convert_ = Convert
 
 run :: Convert -> IO ()
 run (Convert configFile abbrevFile outputStructure outFile fName) = do
-  config <- runConfigParser $ fromMaybe "config.xml" configFile
+  let config::Config = def
+  --config <- runConfigParser $ fromMaybe "config.xml" configFile
   abbrevs <- runAbbrevParser $ fromMaybe "abbrevs.txt" abbrevFile
   lineOffsets <- runLineOffsetParser fName
   parsed <- runXIOState (initialState lineOffsets)
@@ -63,13 +67,13 @@ run (Convert configFile abbrevFile outputStructure outFile fName) = do
                              --, withTrace 4
                              ] fName >>>
              propagateNamespaces >>>
-             stripQNames (getDroppedTrees config) //>
-             hasQName (getTextRoot config) >>>
+             stripQNames (_cfg_droppedTrees config) //>
+             hasQName (_cfg_textRoot config) >>>
              multi (parserArrow config)
             )
   let
     parsedOffsets = propagateOffsets parsed
-    tokens = tokenize (addAbbreviations abbrevs config) parsedOffsets
+    tokens = tokenize (config & cfg_abbreviations .~ abbrevs) parsedOffsets
     textLayer = writeTextLayer config $
                 concatMap getTcfText parsed
     tokenLayer = writeTokenLayer config tokens

@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DisambiguateRecordFields #-}
+{-# LANGUAGE TemplateHaskell #-}
 module HTCF.POStagLayer
   ( POStag (..)
   , getPOStag
@@ -19,8 +20,9 @@ import GHC.Generics
 import qualified Data.ByteString as B
 import qualified Data.Csv as Csv
 import qualified Data.Aeson as A
+import Control.Lens
 
-import HTCF.ConfigParser
+import HTCF.Config
 import HTCF.Utils
 import HTCF.ArrowXml
 import HTCF.Range
@@ -36,10 +38,12 @@ import HTCF.Range
 
 -- | Represents a single POStag
 data POStag = POStag                      
-  { posTag :: String                  -- ^ the POStag
-  , tokenIDs :: [Int]                 -- ^ the IDs of the tokens
-  , tagSet :: Maybe String            -- ^ the tag set
+  { _postag_posTag :: String                  -- ^ the POStag
+  , _postag_tokenIDs :: [Int]                 -- ^ the IDs of the tokens
+  , _postag_tagSet :: Maybe String            -- ^ the tag set
   } deriving (Show, Eq, Generic)
+
+makeLenses ''POStag
 
 -- * Exporting
 
@@ -64,28 +68,31 @@ instance Csv.ToRecord (PostgresRange POStag) where
 
 getPOStag :: POStag -> String
 getPOStag (POStag t _ _) = t
+{-# DEPRECATED getPOStag "Use lenses instead!" #-}
 
 getPOStagTokenIDs :: POStag -> [Int]
 getPOStagTokenIDs (POStag _ idd _) = idd
+{-# DEPRECATED getPOStagTokenIDs "Use lenses instead!" #-}
 
 getPOStagTagSet :: POStag -> Maybe String
 getPOStagTagSet (POStag _ _ s) = s
+{-# DEPRECATED getPOStagTagSet "Use lenses instead!" #-}
 
 -- * Arrows for reading a tcf posTag layer.
 
-parsePOStags :: (ArrowXml a) => [Config] -> Int -> Int -> a XmlTree POStag
+parsePOStags :: (ArrowXml a) => Config -> Int -> Int -> a XmlTree POStag
 parsePOStags cfg pfxLen base =
   --traceMsg 1 ("Parsing POStag layer with prefix length " ++ (show pfxLen) ++ " and base " ++ (show base)) >>> 
-  isElem >>> hasQNameCase (mkNsName "POStags" $ getTcfTextCorpusNamespace cfg) >>>
+  isElem >>> hasQNameCase (mkNsName "POStags" $ _cfg_tcfTextCorpusNamespace cfg) >>>
   parseChildren cfg pfxLen base $< getAttrCaseValue "tagset" -- arr (const "sttla")
   where
-    parseChildren :: (ArrowXml a) => [Config] -> Int -> Int -> String -> a XmlTree POStag
+    parseChildren :: (ArrowXml a) => Config -> Int -> Int -> String -> a XmlTree POStag
     parseChildren cfgg pfxLenn basee tagsett =
       getChildren >>> parsePOStag cfgg pfxLenn basee tagsett
         
-parsePOStag :: (ArrowXml a) => [Config] -> Int -> Int -> String -> a XmlTree POStag
+parsePOStag :: (ArrowXml a) => Config -> Int -> Int -> String -> a XmlTree POStag
 parsePOStag cfg pfxLen base tagset =
-  hasQNameCase (mkNsName "tag" $ getTcfTextCorpusNamespace cfg) >>>
+  hasQNameCase (mkNsName "tag" $ _cfg_tcfTextCorpusNamespace cfg) >>>
   (getChildren >>> getText) &&&
   getAttrCaseValue "tokenIDs" >>>
   arr (\(tag, ids) ->
@@ -98,13 +105,13 @@ parsePOStag cfg pfxLen base tagset =
 -- * Arrows for writing the tcf posTag layer.
 
 -- | Arrow for writing the posTag layer.
-writePOStagLayer :: (ArrowXml a) => [Config] -- ^ the config
+writePOStagLayer :: (ArrowXml a) => Config   -- ^ the config
                 -> [POStag]                  -- ^ the list of posTags
                 -> a XmlTree XmlTree         -- ^ returns an xml arrow
 writePOStagLayer cfg ts =
-  let base = getTcfIdBase cfg
-      prefix = getTcfTokenIdPrefix cfg
-      ns = getTcfTextCorpusNamespace cfg in
+  let base = _cfg_tcfIdBase cfg
+      prefix = _cfg_tcfTokenIdPrefix cfg
+      ns = _cfg_tcfTextCorpusNamespace cfg in
     (mkqelem
      (mkNsName "POStags" ns) -- qname
      [] -- attribute nodes  % TODO: write tagset

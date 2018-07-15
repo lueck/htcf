@@ -5,7 +5,7 @@ module HTCF.ReadTcf
 
 import Text.XML.HXT.Core
 
-import HTCF.ConfigParser
+import HTCF.Config
 
 import HTCF.TokenLayer
 import HTCF.TextLayer
@@ -16,7 +16,7 @@ import qualified HTCF.TcfLayers as Ls
 
 -- | Run the TCF reader in IO. Use this as an example for
 -- your parser with extra layers.
-runTcfReader :: [Config] -> FilePath -> IO Ls.TcfLayers
+runTcfReader :: Config -> FilePath -> IO Ls.TcfLayers
 runTcfReader cfg fname = do
   tree <- runX (readDocument [withValidate no] fname >>>
                 propagateNamespaces
@@ -35,11 +35,11 @@ runTcfReader cfg fname = do
                  parseLemmas cfg tokenIdPfx tokenIdBase)
   {-somethingElse <- runX (constL tree //>
                            parseSomethingElse)-}
-  return Ls.TcfLayers { Ls.text=text
-                      , Ls.tokens=toks
-                      , Ls.sentences=sentences
-                      , Ls.posTags=posTags
-                      , Ls.lemmas=lemmas
+  return Ls.TcfLayers { Ls._layers_text=text
+                      , Ls._layers_tokens=toks
+                      , Ls._layers_sentences=sentences
+                      , Ls._layers_posTags=posTags
+                      , Ls._layers_lemmas=lemmas
                       {-, somethingElse -}
                       }
 
@@ -47,10 +47,10 @@ runTcfReader cfg fname = do
 -- the arrow wrapped in the IO monad.
 runTcfLayerReader :: (Tree a)
                   => [a c] -- ^ the xml tree
-                  -> [Config] -- ^ configuration
+                  -> Config -- ^ configuration
                   -> Int -- ^ prefix length of token IDs
                   -> Int -- ^ base of token IDs
-                  -> ([Config] -> Int -> Int -> IOSLA (XIOState ()) (a c) b) -- ^ parser arrow
+                  -> (Config -> Int -> Int -> IOSLA (XIOState ()) (a c) b) -- ^ parser arrow
                   -> IO [b] -- ^ returns [b] IO action
 runTcfLayerReader tree cfg tokenIdPfx tokenIdBase parser = do
   rc <- runX (constL tree //> parser cfg tokenIdPfx tokenIdBase)

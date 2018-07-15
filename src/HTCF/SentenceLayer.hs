@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DisambiguateRecordFields #-}
+{-# LANGUAGE TemplateHaskell #-}
 module HTCF.SentenceLayer where
 
 import Text.XML.HXT.Core
@@ -11,8 +11,9 @@ import GHC.Generics
 import qualified Data.ByteString as B
 import qualified Data.Csv as Csv
 import qualified Data.Aeson as A
+import Control.Lens
 
-import HTCF.ConfigParser
+import HTCF.Config
 import HTCF.Position
 import HTCF.Utils
 import HTCF.ArrowXml
@@ -28,21 +29,24 @@ type SentenceID = Int
 
 -- | Represents a single sentence
 data Sentence = Sentence                      
-  { tokens :: [Int]                   -- ^ the IDs of the tokens in the sentence
-  , sentenceId :: Maybe SentenceID    -- ^ the sentence's ID
-  , start :: Maybe TextPosition       -- ^ start character offset
-                                      -- position in relation to text
-                                      -- layer
-  , end :: Maybe TextPosition         -- ^ end character offset
-                                      -- position in relation to text
-                                      -- layer
-  , srcStart :: Maybe XmlPosition     -- ^ start character offset
-                                      -- position in relation to XML
-                                      -- source file
-  , srcEnd :: Maybe XmlPosition       -- ^ end character offset
-                                      -- position in relation to XML
-                                      -- source file
+  { _sentence_tokens :: [Int]                -- ^ the IDs of the tokens in the sentence
+  , _sentence_id :: Maybe SentenceID         -- ^ the sentence's ID
+  , _sentence_start :: Maybe TextPosition    -- ^ start character
+                                             -- offset position in
+                                             -- relation to text layer
+  , _sentence_end :: Maybe TextPosition      -- ^ end character offset
+                                             -- position in relation
+                                             -- to text layer
+  , _sentence_srcStart :: Maybe XmlPosition  -- ^ start character
+                                             -- offset position in
+                                             -- relation to XML source
+                                             -- file
+  , _sentence_srcEnd :: Maybe XmlPosition    -- ^ end character offset
+                                             -- position in relation
+                                             -- to XML source file
     } deriving (Show, Eq, Generic)
+
+makeLenses ''Sentence
 
 -- * Exporting
 
@@ -75,35 +79,41 @@ instance Csv.ToRecord (PostgresRange Sentence) where
 
 getTokens :: Sentence -> [Int]
 getTokens (Sentence ts _ _ _ _ _) = ts
+{-# DEPRECATED getTokens "Use lenses instead!" #-}
 
 getSentenceID :: Sentence -> Maybe SentenceID
 getSentenceID (Sentence _ idd _ _ _ _) = idd
+{-# DEPRECATED getSentenceID "Use lenses instead!" #-}
 
 getSentenceStartTextPos :: Sentence -> Maybe TextPosition
 getSentenceStartTextPos (Sentence _ _ s _ _ _) = s
+{-# DEPRECATED getSentenceStartTextPos "Use lenses instead!" #-}
 
 getSentenceEndTextPos :: Sentence -> Maybe TextPosition
 getSentenceEndTextPos (Sentence _ _ _ e _ _) = e
+{-# DEPRECATED getSentenceEndTextPos "Use lenses instead!" #-}
 
 getSentenceStartSrcPos :: Sentence -> Maybe XmlPosition
 getSentenceStartSrcPos (Sentence _ _ _ _ s _) = s
+{-# DEPRECATED getSentenceStartSrcPos "Use lenses instead!" #-}
 
 getSentenceEndSrcPos :: Sentence -> Maybe XmlPosition
 getSentenceEndSrcPos (Sentence _ _ _ _ _ e) = e
+{-# DEPRECATED getSentenceEndSrcPos "Use lenses instead!" #-}
 
 -- * Arrows for reading a tcf sentence layer.
 
 -- | A arrow for parsing the sentences given in a TCF file.
-parseSentences :: (ArrowXml a) => [Config] -> Int -> Int -> Int -> Int -> a XmlTree Sentence
+parseSentences :: (ArrowXml a) => Config -> Int -> Int -> Int -> Int -> a XmlTree Sentence
 parseSentences cfg sentPfxLen sentBase tokPfxLen tokBase =
   --traceMsg 1 ("Parsing sentence layer with prefix length " ++ (show pfxLen) ++ " and base " ++ (show base)) >>> 
-  isElem >>> hasQNameCase (mkNsName "sentences" $ getTcfTextCorpusNamespace cfg) >>>
+  isElem >>> hasQNameCase (mkNsName "sentences" $ _cfg_tcfTextCorpusNamespace cfg) >>>
   getChildren >>>
   parseSentence cfg sentPfxLen sentBase tokPfxLen tokBase
 
-parseSentence :: (ArrowXml a) => [Config] -> Int -> Int -> Int -> Int -> a XmlTree Sentence
+parseSentence :: (ArrowXml a) => Config -> Int -> Int -> Int -> Int -> a XmlTree Sentence
 parseSentence cfg sentPfxLen sentBase tokPfxLen tokBase =
-  hasQNameCase (mkNsName "sentence" $ getTcfTextCorpusNamespace cfg) >>>
+  hasQNameCase (mkNsName "sentence" $ _cfg_tcfTextCorpusNamespace cfg) >>>
   getAttrCaseValue "tokenIDs" &&&
   getAttrCaseValue "ID" &&&
   getAttrCaseValue "start" &&&
@@ -121,10 +131,10 @@ parseSentence cfg sentPfxLen sentBase tokPfxLen tokBase =
 {-# INLINE parseSentence #-}
 
 
-guessAboutSentenceId :: [Config] -> XmlTrees -> IO (Int, Int)
+guessAboutSentenceId :: Config -> XmlTrees -> IO (Int, Int)
 guessAboutSentenceId cfg tree = do
   ids <- runX (constL tree //>
-               multi (isElem >>> hasQNameCase (mkNsName "sentence" $ getTcfTextCorpusNamespace cfg) >>>
+               multi (isElem >>> hasQNameCase (mkNsName "sentence" $ _cfg_tcfTextCorpusNamespace cfg) >>>
                getAttrCaseValue "ID"))
   let pfxLen = length $ commonPrefix $ take 32 $ filter (/= "") ids
   return (pfxLen, (guessBase $ map (drop pfxLen) ids))
@@ -132,15 +142,15 @@ guessAboutSentenceId cfg tree = do
 -- * Arrows for writing the tcf sentence layer.
 
 -- | Arrow for writing the sentence layer.
-writeSentenceLayer :: (ArrowXml a) => [Config] -- ^ the config
+writeSentenceLayer :: (ArrowXml a) => Config -- ^ the config
                 -> [Sentence]                  -- ^ the list of sentences
                 -> a XmlTree XmlTree        -- ^ returns an xml arrow
 writeSentenceLayer cfg ts =
-  let sentBase = getTcfIdBase cfg
-      sentPrefix = getTcfSentenceIdPrefix cfg
-      tokBase = getTcfIdBase cfg
-      tokPrefix = getTcfTokenIdPrefix cfg
-      ns = getTcfTextCorpusNamespace cfg in
+  let sentBase = _cfg_tcfIdBase cfg
+      sentPrefix = _cfg_tcfSentenceIdPrefix cfg
+      tokBase = _cfg_tcfIdBase cfg
+      tokPrefix = _cfg_tcfTokenIdPrefix cfg
+      ns = _cfg_tcfTextCorpusNamespace cfg in
     (mkqelem
      (mkNsName "sentences" ns) -- qname
      [] -- attribute nodes

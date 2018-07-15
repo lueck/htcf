@@ -4,10 +4,10 @@ module HTCF.WriteTcf
 
 import Text.XML.HXT.Core
 
-import HTCF.ConfigParser
+import HTCF.Config
 
 -- | Run the tcf writer in the IO monad.
-runTcfWriter :: [Config]                              -- ^ the config
+runTcfWriter :: Config                                -- ^ the config
              -> FilePath                              -- ^ the output file or \"\" for stdout
              -> [IOSLA (XIOState ()) XmlTree XmlTree] -- ^ arrows for making the preamble
              -> [IOSLA (XIOState ()) XmlTree XmlTree] -- ^ arrows for making the layers
@@ -20,7 +20,7 @@ runTcfWriter cfg fName preamble layers = do
   return rc
 
 -- | Arrow for generating the TCF file.
-mkTcfDocument :: (ArrowXml a) => [Config]      -- ^ the config
+mkTcfDocument :: (ArrowXml a) => Config        -- ^ the config
               -> [a XmlTree XmlTree]           -- ^ arrows for making the preamble
               -> [a XmlTree XmlTree]           -- ^ arrows for making the layers
               -> a XmlTree XmlTree             -- ^ returns an xml arrow
@@ -29,17 +29,17 @@ mkTcfDocument cfg preamble layers =
   []    -- its attribute nodes
   [ -- its child nodes
     (mkqelem  -- make the xml root element
-      (mkQName "" "D-Spin" $ getTcfRootNamespace cfg)
-      [(sattr "xmlns" $ getTcfRootNamespace cfg)] -- attributes
+      (mkQName "" "D-Spin" $ _cfg_tcfRootNamespace cfg)
+      [(sattr "xmlns" $ _cfg_tcfRootNamespace cfg)] -- attributes
       [-- its child nodes
         (mkqelem
-         (mkQName "" "MetaData" $ getTcfMetadataNamespace cfg)
-         [(sattr "xmlns" $ getTcfMetadataNamespace cfg)]
+         (mkQName "" "MetaData" $ _cfg_tcfMetadataNamespace cfg)
+         [(sattr "xmlns" $ _cfg_tcfMetadataNamespace cfg)]
          preamble
         )
       , (mkqelem
-         (mkQName "" "textCorpus" $ getTcfTextCorpusNamespace cfg)
-         [(sattr "xmlns" $ getTcfTextCorpusNamespace cfg)]
+         (mkQName "" "textCorpus" $ _cfg_tcfTextCorpusNamespace cfg)
+         [(sattr "xmlns" $ _cfg_tcfTextCorpusNamespace cfg)]
          layers
         )
       ]

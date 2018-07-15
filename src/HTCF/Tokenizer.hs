@@ -16,7 +16,7 @@ import Data.Maybe
 import HTCF.TokenLayer
 import HTCF.Position
 import HTCF.TcfParserTypeDefs
-import HTCF.ConfigParser
+import HTCF.Config
 
 isNumDay :: String -> Bool
 isNumDay [] = False
@@ -78,16 +78,16 @@ nthWordStart spacesP n s = spacesPlusLetters + (nthWordStart spacesP (n-1) $ dro
 -- | @tokenize@ is the tokenizer function. It takes a configuration
 -- (cf. 'Config') as first parameter and a list of 'TcfElement's as
 -- second parameters. It returns a list of 'Token's.
-tokenize :: [Config] -> [TcfElement] -> [Token]
+tokenize :: Config -> [TcfElement] -> [Token]
 tokenize cfg tcf = tokenize' 1 tcf
   where
     -- get configuration aspects
-    nonBreakingChars = getNoBreaks cfg
-    mkSingleDigitOrdinalP = singleDigitOrdinalP cfg
-    hyphens = getHyphens cfg
-    mk1CharAbbrevP = abbrev1CharTokenP cfg
-    months = getMonths cfg
-    abbrevs = map (++ ".") $ getAbbreviations cfg
+    nonBreakingChars = _cfg_noBreak cfg
+    mkSingleDigitOrdinalP = _cfg_singleDigitOrdinal cfg
+    hyphens = _cfg_hyphens cfg
+    mk1CharAbbrevP = _cfg_abbrev1CharToken cfg
+    months = _cfg_months cfg
+    abbrevs = map (++ ".") $ _cfg_abbreviations cfg
 
     -- We call _break_ a separating character.
     isBreak :: Char -> Bool
