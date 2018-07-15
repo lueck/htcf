@@ -3,21 +3,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE TemplateHaskell #-}
-module HTCF.TcfData
-  ( TcfData(..)
-  , getToken
-  , getTokenID
-  , getLemma
-  , fillTcfData
-  , mkIdDataTuple
-  , fromToken
-  , tokensFromSentences
-  , tokensFromPOStags
-  , tokensFromLemmas
-  , frequencies
-  , updateWithFrequencies
-  , collectTokenData
-  ) where
+module HTCF.TcfData where
 
 
 import Data.Maybe

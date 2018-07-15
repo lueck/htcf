@@ -77,8 +77,8 @@ run (Convert configFile readLayer outputMethod csvDel inFile) = do
     freqs = case readLayer of
       -- Just LemmaLayer -> map getToken $ tokensFromLemmas $ getLemmas layers
       -- otherwise -> map getLemma $ map fromToken $ getTokens layers
-      Just LemmaLayer -> frequencies getLemma $ tokensFromLemmas $ getLemmas layers
-      otherwise -> frequencies getToken $ map fromToken $ getTokens layers
+      Just LemmaLayer -> frequencies (^.tcftok_lemma) $ tokensFromLemmas $ _layers_lemmas layers
+      otherwise -> frequencies (^.tcftok_token) $ map fromToken $ _layers_tokens layers
   method freqs
   --print freqs
 
