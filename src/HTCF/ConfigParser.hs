@@ -24,11 +24,15 @@ import Data.Maybe
 import System.IO
 import System.Directory
 import System.Environment
+import Control.Lens
+import Data.Default.Class
+
+import HTCF.Config
 
 -- * Parsing the xml config file.
 
 -- | Returns the config defined in a XML config file.
-runConfigParser :: FilePath -> IO [Config]
+runConfigParser :: FilePath -> IO Config
 runConfigParser fname = do
   exists <- doesFileExist fname
   progName <- getProgName
@@ -36,134 +40,128 @@ runConfigParser fname = do
     do { results <- runX (readDocument [withValidate no] fname >>>
                           propagateNamespaces //>
                           hasName "config" >>>
-                          multi parseConfig)
-       ; return results}
+                          single parseConfig)
+       ; return $ head results}
     else
     do { hPutStrLn stderr (progName ++ ": No config file found. Using default config")
-       ; return [] }
+       ; return def }
 
 -- | An arrow for parsing the config file. Cf. implementation of
 -- 'runConfigParser' for usage.
 parseConfig :: IOSArrow XmlTree Config
 parseConfig =
-  pcTextRoot <+>
-  pcDroppedTreeSimple <+>
-  pcLinebreak <+>
-  pcHyphen <+>
-  pcNoBreak <+>
-  pcAbbrev1CharToken <+>
-  pcSingleDigitOrdinal <+>
-  pcMonth <+>
-  pcTcfRootNamespace <+>
-  pcTcfTextCorpusNamespace <+>
-  pcTcfMetadataNamespace <+>
-  pcTcfIdBase <+>
-  pcTcfTokenIdPrefix <+>
-  pcTcfSentenceIdPrefix
+  (first pcTextRoot) &&&
+  (multi pcDroppedTreeSimple) &&&
+  (multi pcLinebreak) &&&
+  arr (\(textRoot, (dropped, lbreaks)) ->
+         def
+         & cfg_textRoot .~ textRoot
+         & cfg_droppedTrees .~ dropped
+         & cfg_lineBreaks .~ lbreaks)
+  -- pcHyphen <+>
+  -- pcNoBreak <+>
+  -- pcAbbrev1CharToken <+>
+  -- pcSingleDigitOrdinal <+>
+  -- pcMonth <+>
+  -- pcTcfRootNamespace <+>
+  -- pcTcfTextCorpusNamespace <+>
+  -- pcTcfMetadataNamespace <+>
+  -- pcTcfIdBase <+>
+  -- pcTcfTokenIdPrefix <+>
+  -- pcTcfSentenceIdPrefix
 
 -- * Parsing the XML config file
 
 -- | Arrows for parsing special configuration aspects are all prefixed
 -- with pc which stands for parseConfig.
 
-pcTextRoot :: IOSArrow XmlTree Config
+pcTextRoot :: IOSArrow XmlTree QName
 pcTextRoot =
   hasName "textRoot" >>>
   getAttrValue0 "name" &&&
   getAttrValue0 "namespace" >>>
-  arr (TextRoot . (uncurry mkNsName))
+  arr (uncurry mkNsName)
 
-pcDroppedTreeSimple :: IOSArrow XmlTree Config
+pcDroppedTreeSimple :: IOSArrow XmlTree QName
 pcDroppedTreeSimple =
   hasName "droppedTree" >>> getChildren >>>
   hasName "simpleElement" >>>
   getAttrValue0 "name" &&&
   getAttrValue0 "namespace" >>>
-  arr (DroppedTree . (uncurry mkNsName))
+  arr (uncurry mkNsName)
 
-pcLinebreak :: IOSArrow XmlTree Config
+pcLinebreak :: IOSArrow XmlTree QName
 pcLinebreak =
   hasName "tokenizer" >>> getChildren >>>
   hasName "linebreak" >>>
   getAttrValue0 "name" &&&
   getAttrValue0 "namespace" >>>
-  arr (LineBreak . (uncurry mkNsName))
+  arr (uncurry mkNsName)
 
-pcHyphen :: IOSArrow XmlTree Config
+pcHyphen :: IOSArrow XmlTree Char
 pcHyphen =
   hasName "tokenizer" >>> getChildren >>>
   hasName "hyphen" >>>
   getAttrValue0 "char" >>>
-  arr (Hyphen . head)
+  arr head
 
-pcNoBreak :: (ArrowXml a) => a XmlTree Config
+pcNoBreak :: (ArrowXml a) => a XmlTree Char
 pcNoBreak =
   hasName "tokenizer" >>> getChildren >>>
   hasName "noBreak" >>>
   getAttrValue0 "char" >>>
-  arr (NoBreak . head)
+  arr head
 
-pcMonth :: IOSArrow XmlTree Config
+pcMonth :: IOSArrow XmlTree String
 pcMonth =
   hasName "tokenizer" >>> getChildren >>>
   hasName "month" >>> getChildren >>>
-  isText >>> getText >>>
-  arr (Month)
+  isText >>> getText
 
-pcAbbrev1CharToken :: IOSArrow XmlTree Config
+pcAbbrev1CharToken :: IOSArrow XmlTree Bool
 pcAbbrev1CharToken =
   hasName "tokenizer" >>> getChildren >>>
   hasName "abbrev1Char" >>>
   getAttrValue0 "abbrev" >>>
-  arr (Abbrev1CharToken . (== "True"))
+  arr (== "True")
 
-pcSingleDigitOrdinal :: (ArrowXml a) => a XmlTree Config
+pcSingleDigitOrdinal :: (ArrowXml a) => a XmlTree Bool
 pcSingleDigitOrdinal =
   hasName "tokenizer" >>> getChildren >>>
   hasName "singleDigitOrdinal" >>>
   getAttrValue0 "ordinal" >>>
-  arr (SingleDigitOrdinal . (== "True"))
+  arr (== "True")
 
-pcTcfRootNamespace :: (ArrowXml a) => a XmlTree Config
+pcTcfRootNamespace :: (ArrowXml a) => a XmlTree String
 pcTcfRootNamespace =
   hasName "tcf" >>> getChildren >>>
   hasName "tcfRootNamespace" >>>
-  getAttrValue "namespace" >>>
-  arr (TcfRootNamespace . _cfg_onNull _cfg_tcfRootNamespace)
+  getAttrValue "namespace"
 
-pcTcfTextCorpusNamespace :: IOSArrow XmlTree Config
+pcTcfTextCorpusNamespace :: IOSArrow XmlTree String
 pcTcfTextCorpusNamespace =
   hasName "tcf" >>> getChildren >>>
   hasName "tcfTextCorpusNamespace" >>>
-  getAttrValue "namespace" >>>
-  arr (TcfTextCorpusNamespace . _cfg_onNull _cfg_tcfTextCorpusNamespace)
+  getAttrValue "namespace"
 
-pcTcfMetadataNamespace :: IOSArrow XmlTree Config
+pcTcfMetadataNamespace :: IOSArrow XmlTree String
 pcTcfMetadataNamespace =
   hasName "tcf" >>> getChildren >>>
   hasName "tcfMetadataNamespace" >>>
-  getAttrValue "namespace" >>>
-  arr (TcfMetadataNamespace . _cfg_onNull _cfg_tcfMetadataNamespace)
+  getAttrValue "namespace"
 
-pcTcfIdBase :: IOSArrow XmlTree Config
+pcTcfIdBase :: IOSArrow XmlTree Int
 pcTcfIdBase =
   hasName "tcf" >>> getChildren >>>
   hasName "idBase" >>>   getAttrValue "base" >>>
-  arr (TcfIdBase . fromMaybe _cfg_tcfIdBase . fmap fst . C.readInt . C.pack) 
+  arr (fromMaybe (def^.cfg_tcfIdBase) . fmap fst . C.readInt . C.pack)
 
-pcTcfTokenIdPrefix :: IOSArrow XmlTree Config
+pcTcfTokenIdPrefix :: IOSArrow XmlTree String
 pcTcfTokenIdPrefix =
   hasName "tcf" >>> getChildren >>>
-  hasName "tokenIdPrefix" >>> getAttrValue "prefix" >>>
-  arr (TcfTokenIdPrefix . _cfg_onNull _cfg_tcfTokenIdPrefix)
+  hasName "tokenIdPrefix" >>> getAttrValue "prefix"
 
-pcTcfSentenceIdPrefix :: IOSArrow XmlTree Config
+pcTcfSentenceIdPrefix :: IOSArrow XmlTree String
 pcTcfSentenceIdPrefix =
   hasName "tcf" >>> getChildren >>>
-  hasName "sentenceIdPrefix" >>> getAttrValue "prefix" >>>
-  arr (TcfSentenceIdPrefix . _cfg_onnull _cfg_tcfSentenceIdPrefix)
-
--- | Helper function
-defaultOnNull :: [a] -> [a] -> [a]
-defaultOnNull deflt [] = deflt
-defaultOnNull _ (x:xs) = x:xs
+  hasName "sentenceIdPrefix" >>> getAttrValue "prefix"
